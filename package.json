@@ -1,0 +1,22 @@
+{
+  "name": "capacity-planner",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=frontend",
+    "dev:api": "npm run dev --workspace=backend",
+    "db:generate": "npm run db:generate --workspace=backend",
+    "db:migrate": "npm run db:migrate --workspace=backend",
+    "db:migrate:dev": "npm run db:migrate:dev --workspace=backend",
+    "db:push": "npm run db:push --workspace=backend",
+    "db:seed": "npm run db:seed --workspace=backend",
+    "db:studio": "npm run db:studio --workspace=backend",
+    "db:reset": "npm run db:reset --workspace=backend",
+    "db:check": "npm run db:check --workspace=backend",
+    "typecheck:api": "npm run typecheck --workspace=backend"
+  }
+}

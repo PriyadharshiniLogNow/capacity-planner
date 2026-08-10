@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / RBAC
+// ---------------------------------------------------------------------------
+
+enum RoleName {
+  ADMIN_PLANNER
+  EMPLOYEE
+  MANAGEMENT
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String
+  employeeId   String?    @unique
+  employee     Employee?  @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  isActive     Boolean    @default(true)
+  roles        UserRole[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(cuid())
+  name        RoleName   @unique
+  description String?
+  users       UserRole[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ---------------------------------------------------------------------------
+// Master data
+// ---------------------------------------------------------------------------
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProjectStatus {
+  OPEN
+  CLOSED
+}
+
+enum ProjectType {
+  CUSTOMER
+  INTERNAL
+}
+
+model Employee {
+  id           String         @id @default(cuid())
+  employeeCode String         @unique
+  firstName    String
+  lastName     String
+  role         String
+  department   String
+  managerId    String?
+  manager      Employee?      @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports Employee[]    @relation("EmployeeManager")
+  weeklyHours  Float
+  /// ISO weekday numbers 1=Mon .. 7=Sun, e.g. [1,2,3,4,5]
+  workingDays  Int[]
+  startDate    DateTime       @db.Date
+  endDate      DateTime?      @db.Date
+  status       EmployeeStatus @default(ACTIVE)
+  createdAt    DateTime       @default(now())
+  createdBy    String
+  updatedAt    DateTime       @updatedAt
+  updatedBy    String
+
+  user           User?
+  managedProjects Project[]     @relation("ProjectManager")
+  capacityPlans  CapacityPlan[]
+  timeEntries    TimeEntry[]
+  absences       Absence[]
+
+  @@index([department])
+  @@index([managerId])
+  @@index([status])
+  @@map("employees")
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  projectCode      String        @unique
+  name             String
+  type             ProjectType
+  customerName     String?
+  projectManagerId String?
+  projectManager   Employee?     @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: SetNull)
+  startDate        DateTime      @db.Date
+  endDate          DateTime      @db.Date
+  billable         Boolean       @default(false)
+  status           ProjectStatus @default(OPEN)
+  createdAt        DateTime      @default(now())
+  createdBy        String
+  updatedAt        DateTime      @updatedAt
+  updatedBy        String
+
+  capacityPlans CapacityPlan[]
+  timeEntries   TimeEntry[]
+
+  @@index([type])
+  @@index([status])
+  @@index([projectManagerId])
+  @@map("projects")
+}
+
+// ---------------------------------------------------------------------------
+// Planning & time
+// ---------------------------------------------------------------------------
+
+model CapacityPlan {
+  id           String   @id @default(cuid())
+  employeeId   String
+  projectId    String
+  planDate     DateTime @db.Date
+  plannedHours Float
+  createdAt    DateTime @default(now())
+  createdBy    String
+  updatedAt    DateTime @updatedAt
+  updatedBy    String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, projectId, planDate])
+  @@index([planDate])
+  @@index([employeeId, planDate])
+  @@map("capacity_plans")
+}
+
+enum TimeCategory {
+  EXTERNAL_BILLABLE
+  EXTERNAL_NON_BILLABLE
+  INTERNAL
+  ADMINISTRATION
+}
+
+model TimeEntry {
+  id           String       @id @default(cuid())
+  employeeId   String
+  projectId    String
+  entryDate    DateTime     @db.Date
+  actualHours  Float
+  timeCategory TimeCategory
+  comment      String?
+  createdAt    DateTime     @default(now())
+  createdBy    String
+  updatedAt    DateTime     @updatedAt
+  updatedBy    String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([entryDate])
+  @@index([employeeId, entryDate])
+  @@map("time_entries")
+}
+
+enum AbsenceType {
+  VACATION
+  SICKNESS
+  PUBLIC_HOLIDAY
+  OTHER
+}
+
+model Absence {
+  id          String      @id @default(cuid())
+  employeeId  String
+  absenceType AbsenceType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  hours       Float
+  createdAt   DateTime    @default(now())
+  createdBy   String
+  updatedAt   DateTime    @updatedAt
+  updatedBy   String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, startDate, endDate])
+  @@map("absences")
+}
+
+// ---------------------------------------------------------------------------
+// Calendar
+// ---------------------------------------------------------------------------
+
+model WorkCalendar {
+  id                 String          @id @default(cuid())
+  name               String          @unique
+  /// ISO weekday numbers 1=Mon .. 7=Sun
+  workingDays        Int[]
+  standardHoursPerDay Float
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  holidays PublicHoliday[]
+
+  @@map("work_calendars")
+}
+
+model PublicHoliday {
+  id          String   @id @default(cuid())
+  calendarId  String
+  holidayDate DateTime @db.Date
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  calendar WorkCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@unique([calendarId, holidayDate])
+  @@index([holidayDate])
+  @@map("public_holidays")
+}
