@@ -1,15 +1,13 @@
-import "../config/env";
+import { config as loadEnv } from "dotenv";
+import path from "path";
 import { PrismaClient } from "@prisma/client";
+
+loadEnv({ path: path.resolve(__dirname, "../../.env") });
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-/**
- * Shared Prisma client singleton.
- * Reuses the same instance in development to avoid exhausting DB connections
- * when the process is restarted by nodemon/tsx watch.
- */
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({

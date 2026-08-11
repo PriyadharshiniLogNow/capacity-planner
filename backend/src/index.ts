@@ -1,8 +1,8 @@
-import { env } from "./config/env";
-import { connectDatabase, disconnectDatabase } from "./lib/prisma";
-import { checkDatabaseConnection } from "./db/health";
 import express from "express";
 import cors from "cors";
+import { connectDatabase, disconnectDatabase, prisma } from "./lib/prisma";
+
+const port = Number(process.env.PORT ?? 4000);
 
 async function bootstrap() {
   await connectDatabase();
@@ -11,16 +11,9 @@ async function bootstrap() {
   app.use(cors());
   app.use(express.json());
 
-  app.get("/health", async (_req, res) => {
-    const db = await checkDatabaseConnection();
-    res.status(db.ok ? 200 : 503).json({
-      status: db.ok ? "ok" : "degraded",
-      database: db,
-    });
-  });
 
-  const server = app.listen(env.port, () => {
-    console.log(`API listening on ${env.port}`);
+  const server = app.listen(port, () => {
+    console.log(`API listening on ${port}`);
   });
 
   const shutdown = async (signal: string) => {
