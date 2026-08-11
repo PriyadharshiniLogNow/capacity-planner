@@ -11,48 +11,21 @@ datasource db {
 // Auth / RBAC
 // ---------------------------------------------------------------------------
 
-enum RoleName {
-  ADMIN_PLANNER
+enum Role {
+  PLANNER
   EMPLOYEE
   MANAGEMENT
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String
-  displayName  String
-  employeeId   String?    @unique
-  employee     Employee?  @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  isActive     Boolean    @default(true)
-  roles        UserRole[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("users")
-}
-
-model Role {
-  id          String     @id @default(cuid())
-  name        RoleName   @unique
-  description String?
-  users       UserRole[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  @@map("roles")
-}
-
-model UserRole {
-  id        String   @id @default(cuid())
-  userId    String
-  roleId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, roleId])
-  @@map("user_roles")
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +68,6 @@ model Employee {
   updatedAt    DateTime       @updatedAt
   updatedBy    String
 
-  user           User?
   managedProjects Project[]     @relation("ProjectManager")
   capacityPlans  CapacityPlan[]
   timeEntries    TimeEntry[]

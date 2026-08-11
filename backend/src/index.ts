@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { connectDatabase, disconnectDatabase, prisma } from "./lib/prisma";
+import { apiRoutes } from "./routes";
 
 const port = Number(process.env.PORT ?? 4000);
 
@@ -10,6 +11,7 @@ async function bootstrap() {
   const app = express();
   app.use(cors());
   app.use(express.json());
+  app.use("/api", apiRoutes);
 
 
   const server = app.listen(port, () => {
