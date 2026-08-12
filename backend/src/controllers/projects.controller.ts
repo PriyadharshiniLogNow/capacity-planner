@@ -10,8 +10,8 @@ import { prisma } from "../lib/prisma";
 import {
   listProjectsQuerySchema,
   projectBodySchema,
-  type ProjectBody,
 } from "../schemas/project.schema";
+import type { ProjectBody } from "../types/project.type";
 
 function validationError(res: Response, error: ZodError) {
   return res.status(422).json({

@@ -12,9 +12,9 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum Role {
-  PLANNER
+  ADMIN
+  SUPERVISOR
   EMPLOYEE
-  MANAGEMENT
 }
 
 model User {

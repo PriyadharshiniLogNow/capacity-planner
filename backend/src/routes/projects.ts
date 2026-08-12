@@ -13,18 +13,18 @@ const projectRoutes = Router();
 
 projectRoutes.use(authMiddleware);
 
-projectRoutes.post("/", requireRoles("PLANNER"), createProject);
+projectRoutes.post("/", requireRoles("ADMIN"), createProject);
 projectRoutes.get(
   "/",
-  requireRoles("PLANNER", "EMPLOYEE", "MANAGEMENT"),
+  requireRoles("ADMIN", "EMPLOYEE", "SUPERVISOR"),
   listProjects,
 );
 projectRoutes.get(
   "/:id",
-  requireRoles("PLANNER", "EMPLOYEE", "MANAGEMENT"),
+  requireRoles("ADMIN", "EMPLOYEE", "SUPERVISOR"),
   getProjectById,
 );
-projectRoutes.put("/:id", requireRoles("PLANNER"), updateProject);
-projectRoutes.delete("/:id", requireRoles("PLANNER"), deleteProject);
+projectRoutes.put("/:id", requireRoles("ADMIN"), updateProject);
+projectRoutes.delete("/:id", requireRoles("ADMIN"), deleteProject);
 
 export { projectRoutes };
