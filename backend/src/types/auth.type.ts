@@ -4,6 +4,7 @@ export type AuthUser = {
   id: string;
   email: string;
   role: Role;
+  employeeId: string | null;
 };
 
 export type RegisterBody = {

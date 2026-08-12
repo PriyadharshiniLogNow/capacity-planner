@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EmployeeStatus } from "@prisma/client";
+import { emailSchema, passwordSchema } from "./auth.schema";
 
 const dateString = z
   .string()
@@ -22,7 +23,7 @@ const workingDaysSchema = z
     "workingDays values must be unique",
   );
 
-const employeeBodySchema = z
+const employeeProfileSchema = z
   .object({
     employeeCode: z.string().trim().min(1, "employeeCode is required"),
     firstName: z.string().trim().min(1, "firstName is required"),
@@ -46,8 +47,14 @@ const employeeBodySchema = z
     }
   });
 
-export const createEmployeeSchema = employeeBodySchema;
-export const updateEmployeeSchema = employeeBodySchema;
+export const createEmployeeSchema = employeeProfileSchema.and(
+  z.object({
+    email: emailSchema,
+    password: passwordSchema,
+  }),
+);
+
+export const updateEmployeeSchema = employeeProfileSchema;
 
 export const listEmployeesQuerySchema = z.object({
   status: z.nativeEnum(EmployeeStatus).optional(),
