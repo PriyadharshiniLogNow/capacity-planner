@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import { connectDatabase, disconnectDatabase } from "./lib/prisma";
 import { apiRoutes } from "./routes";
-import { errorHandler } from "./middleware/errorHandler";
+
 
 const port = Number(process.env.PORT ?? 4000);
 
@@ -13,7 +13,6 @@ async function bootstrap() {
   app.use(cors());
   app.use(express.json());
   app.use("/api", apiRoutes);
-  app.use(errorHandler);
 
   const server = app.listen(port, () => {
     console.log(`API listening on ${port}`);
