@@ -7,16 +7,24 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  const header = req.headers.authorization;
+  const token = header?.startsWith("Bearer ")
+    ? header.slice("Bearer ".length)
+    : undefined;
+
   if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const decoded = jwtUtils.verify(
-    token,
-    process.env.JWT_SECRET as string,
-  ) as AuthUser;
+  try {
+    const decoded = jwtUtils.verify(
+      token,
+      process.env.JWT_SECRET as string,
+    ) as AuthUser;
 
-  req.user = decoded;
-  next();
+    req.user = decoded;
+    return next();
+  } catch {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 };
