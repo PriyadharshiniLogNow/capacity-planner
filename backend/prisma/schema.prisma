@@ -18,12 +18,14 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String
   role         Role
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  employeeId   String?   @unique
+  employee     Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@map("users")
 }
@@ -72,6 +74,7 @@ model Employee {
   capacityPlans  CapacityPlan[]
   timeEntries    TimeEntry[]
   absences       Absence[]
+  user           User?
 
   @@index([department])
   @@index([managerId])

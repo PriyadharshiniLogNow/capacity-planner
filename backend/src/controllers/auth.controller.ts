@@ -1,25 +1,53 @@
 import type { Request, Response } from "express";
+import { ZodError } from "zod";
 import { prisma } from "../lib/prisma";
-import type {
-  AuthUser,
-  LoginBody,
-  LoginResponse,
-  RegisterBody,
-  RegisterResponse,
-} from "../types/auth.type";
+import { loginSchema, registerSchema } from "../schemas/auth.schema";
+import type { AuthUser, LoginResponse, RegisterResponse } from "../types/auth.type";
 import { jwtUtils } from "../utils/jwt";
 import { comparePassword, hashPassword } from "../utils/password";
 
-function toAuthUser(user: AuthUser): AuthUser {
+function validationError(res: Response, error: ZodError) {
+  return res.status(422).json({
+    message: "Validation failed",
+    errors: error.flatten(),
+  });
+}
+
+function toAuthUser(user: {
+  id: string;
+  email: string;
+  role: AuthUser["role"];
+  employeeId: string | null;
+}): AuthUser {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
+    employeeId: user.employeeId,
   };
 }
 
 export const register = async (req: Request, res: Response) => {
-  const { email, password, role } = req.body as RegisterBody;
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return validationError(res, parsed.error);
+  }
+
+  const { email, password, role } = parsed.data;
+
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return res.status(409).json({
+      error: {
+        code: "EMAIL_ALREADY_EXISTS",
+        message: "An account with this email already exists",
+      },
+    });
+  }
 
   const passwordHash = await hashPassword(password);
 
@@ -40,7 +68,12 @@ export const register = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body as LoginBody;
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return validationError(res, parsed.error);
+  }
+
+  const { email, password } = parsed.data;
 
   const user = await prisma.user.findUnique({
     where: { email },
@@ -56,10 +89,19 @@ export const login = async (req: Request, res: Response) => {
   }
 
   const authUser = toAuthUser(user);
-  const token = jwtUtils.sign(authUser, process.env.JWT_SECRET as string, {
-    expiresIn: (process.env.JWT_EXPIRES_IN ??
-      "7d") as `${number}${"s" | "m" | "h" | "d"}`,
-  });
+  const token = jwtUtils.sign(
+    {
+      id: authUser.id,
+      email: authUser.email,
+      role: authUser.role,
+      employeeId: authUser.employeeId,
+    },
+    process.env.JWT_SECRET as string,
+    {
+      expiresIn: (process.env.JWT_EXPIRES_IN ??
+        "7d") as `${number}${"s" | "m" | "h" | "d"}`,
+    },
+  );
 
   const body: LoginResponse = {
     message: "Login successful",
