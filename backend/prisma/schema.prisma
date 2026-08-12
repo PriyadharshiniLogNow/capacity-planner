@@ -155,8 +155,11 @@ model TimeEntry {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId])
+  @@index([projectId])
   @@index([entryDate])
   @@index([employeeId, entryDate])
+  @@index([projectId, entryDate])
   @@map("time_entries")
 }
 
@@ -173,7 +176,9 @@ model Absence {
   absenceType AbsenceType
   startDate   DateTime    @db.Date
   endDate     DateTime    @db.Date
+  /// Total absence hours across the date range (working days only).
   hours       Float
+  note        String?
   createdAt   DateTime    @default(now())
   createdBy   String
   updatedAt   DateTime    @updatedAt
@@ -181,6 +186,9 @@ model Absence {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId])
+  @@index([startDate])
+  @@index([endDate])
   @@index([employeeId, startDate, endDate])
   @@map("absences")
 }
