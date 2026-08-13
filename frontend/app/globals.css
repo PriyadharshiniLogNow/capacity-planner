@@ -6,12 +6,14 @@
 @source "../hooks/**/*.{js,ts,jsx,tsx,mdx}";
 
 :root {
-  --background: #f7f8fa;
-  --foreground: #14181f;
+  --background: #f5f3fb;
+  --foreground: #1b1740;
   --surface: #ffffff;
-  --border: #d9dee7;
-  --muted: #5b6573;
-  --accent: #1f4e79;
+  --border: #e4dff3;
+  --muted: #6b6580;
+  --accent: #6c4ce8;
+  --accent-hover: #5b3dd1;
+  --accent-soft: #f0ecff;
   --accent-foreground: #ffffff;
   --util-under: #3b82f6;
   --util-partial: #ca8a04;
@@ -27,6 +29,8 @@
   --color-border: var(--border);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
   --color-accent-foreground: var(--accent-foreground);
   --color-utilization-under: var(--util-under);
   --color-utilization-partial: var(--util-partial);

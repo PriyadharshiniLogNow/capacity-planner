@@ -22,6 +22,8 @@ const config: Config = {
         muted: "var(--muted)",
         accent: {
           DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
+          soft: "var(--accent-soft)",
           foreground: "var(--accent-foreground)",
         },
         utilization: {
