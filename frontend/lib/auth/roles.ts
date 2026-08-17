@@ -33,9 +33,9 @@ export function getNavItems(role: Role): NavItem[] {
     return [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/planning", label: "Planning" },
-      { href: "/employees", label: "Employees" },
+      { href: "/time-entries", label: "Time Entry" },
       { href: "/projects", label: "Projects" },
-      { href: "/time-entries", label: "Time Entries" },
+      { href: "/employees", label: "Employees" },
       { href: "/absences", label: "Absences" },
     ];
   }
@@ -43,9 +43,9 @@ export function getNavItems(role: Role): NavItem[] {
   if (role === "EMPLOYEE") {
     return [
       { href: "/dashboard", label: "Dashboard" },
-      { href: "/planning", label: "My Planning" },
-      { href: "/time-entries", label: "My Time Entries" },
-      { href: "/absences", label: "My Absences" },
+      { href: "/planning", label: "Planning" },
+      { href: "/time-entries", label: "Time Entry" },
+      { href: "/absences", label: "Absences" },
       { href: "/profile", label: "Profile" },
     ];
   }

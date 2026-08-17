@@ -1,4 +1,4 @@
-import { apiRequest, toQueryString } from "./client";
+import { apiRequest, readCollection, toQueryString } from "./client";
 import type {
   ProjectListQuery,
   ProjectListResponse,
@@ -22,12 +22,12 @@ export function listProjects(query: ProjectListQuery = {}) {
 export async function listAllProjects(
   query: Omit<ProjectListQuery, "page" | "limit"> = {},
 ): Promise<ProjectResponse[]> {
-  const first = await listProjects({ ...query, page: 1, limit: 100 });
-  const projects = [...first.data];
+  const first = readCollection(await listProjects({ ...query, page: 1, limit: 100 }));
+  const projects = [...first.items];
 
-  for (let page = 2; page <= first.pagination.totalPages; page += 1) {
-    const next = await listProjects({ ...query, page, limit: 100 });
-    projects.push(...next.data);
+  for (let page = 2; page <= first.totalPages; page += 1) {
+    const next = readCollection(await listProjects({ ...query, page, limit: 100 }));
+    projects.push(...next.items);
   }
 
   return projects;

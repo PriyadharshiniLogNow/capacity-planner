@@ -80,6 +80,26 @@ function isAuthPath(path: string) {
   return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register");
 }
 
+export function readCollection<T>(
+  response:
+    | {
+        data?: T[] | null;
+        pagination?: { totalPages?: number } | null;
+      }
+    | null
+    | undefined,
+): { items: T[]; totalPages: number } {
+  const items = Array.isArray(response?.data) ? response.data : [];
+  const totalPages = response?.pagination?.totalPages;
+  return {
+    items,
+    totalPages:
+      typeof totalPages === "number" && Number.isFinite(totalPages) && totalPages > 0
+        ? totalPages
+        : 1,
+  };
+}
+
 export function toQueryString(
   params: Record<string, string | number | boolean | undefined>,
 ): string {

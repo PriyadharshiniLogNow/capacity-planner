@@ -1,20 +1,35 @@
--- Rename auth roles: PLANNER -> ADMIN, MANAGEMENT -> SUPERVISOR (EMPLOYEE unchanged)
+-- Move auth from roles/user_roles (RoleName) onto a users.role column.
+-- Maps ADMIN_PLANNER -> ADMIN, MANAGEMENT -> SUPERVISOR (EMPLOYEE unchanged).
 
-CREATE TYPE "Role_new" AS ENUM ('ADMIN', 'SUPERVISOR', 'EMPLOYEE');
+DO $$ BEGIN
+  CREATE TYPE "Role" AS ENUM ('ADMIN', 'SUPERVISOR', 'EMPLOYEE');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE "users" ALTER COLUMN "role" DROP DEFAULT;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" "Role";
 
-ALTER TABLE "users"
-  ALTER COLUMN "role" TYPE "Role_new"
-  USING (
-    CASE "role"::text
-      WHEN 'PLANNER' THEN 'ADMIN'::"Role_new"
-      WHEN 'MANAGEMENT' THEN 'SUPERVISOR'::"Role_new"
-      WHEN 'EMPLOYEE' THEN 'EMPLOYEE'::"Role_new"
-      ELSE 'EMPLOYEE'::"Role_new"
-    END
-  );
+UPDATE "users" AS u
+SET "role" = CASE r.name::text
+  WHEN 'ADMIN_PLANNER' THEN 'ADMIN'::"Role"
+  WHEN 'PLANNER' THEN 'ADMIN'::"Role"
+  WHEN 'ADMIN' THEN 'ADMIN'::"Role"
+  WHEN 'MANAGEMENT' THEN 'SUPERVISOR'::"Role"
+  WHEN 'SUPERVISOR' THEN 'SUPERVISOR'::"Role"
+  ELSE 'EMPLOYEE'::"Role"
+END
+FROM "user_roles" AS ur
+JOIN "roles" AS r ON r.id = ur."roleId"
+WHERE ur."userId" = u.id
+  AND u."role" IS NULL;
 
-DROP TYPE "Role";
+UPDATE "users" SET "role" = 'EMPLOYEE'::"Role" WHERE "role" IS NULL;
 
-ALTER TYPE "Role_new" RENAME TO "Role";
+ALTER TABLE "users" ALTER COLUMN "role" SET NOT NULL;
+
+DROP TABLE IF EXISTS "user_roles";
+DROP TABLE IF EXISTS "roles";
+DROP TYPE IF EXISTS "RoleName";
+
+ALTER TABLE "users" DROP COLUMN IF EXISTS "displayName";
+ALTER TABLE "users" DROP COLUMN IF EXISTS "isActive";

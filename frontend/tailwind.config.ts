@@ -26,6 +26,12 @@ const config: Config = {
           soft: "var(--accent-soft)",
           foreground: "var(--accent-foreground)",
         },
+        sidebar: {
+          DEFAULT: "var(--sidebar)",
+          text: "var(--sidebar-text)",
+          hover: "var(--sidebar-hover)",
+          active: "var(--sidebar-active)",
+        },
         utilization: {
           under: "var(--util-under)",
           partial: "var(--util-partial)",
