@@ -7,7 +7,7 @@ export default function ProjectsPage() {
   return (
     <ModulePlaceholder
       title="Projects"
-      description="Project master data is available through the API. Management can view projects; only Administrators can change them."
+      description="Administrators can create and manage projects. Supervisors can view all projects. Employees can view assigned projects."
     />
   );
 }

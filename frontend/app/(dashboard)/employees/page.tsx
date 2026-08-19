@@ -7,7 +7,7 @@ export default function EmployeesPage() {
   return (
     <ModulePlaceholder
       title="Employees"
-      description="Employee master data is available through the API. This screen is read-only for Management and editable for Administrators in a later module."
+      description="Administrators can create and manage employees. Supervisors can view their team. Employees can open their own profile from the sidebar."
     />
   );
 }
