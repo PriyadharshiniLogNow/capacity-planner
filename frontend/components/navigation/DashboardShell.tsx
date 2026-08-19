@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { BrandMarkIcon } from "@/components/auth/icons";
 import { getNavItems, getRoleLabel } from "@/lib/auth/roles";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
@@ -37,19 +36,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 border-r border-border bg-surface lg:flex lg:flex-col">
-          <div className="flex items-center gap-3 px-5 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-              <BrandMarkIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold tracking-[0.16em] text-foreground">
-                LOGNOW
-              </p>
-              <p className="text-xs text-muted">Capacity Planner</p>
-            </div>
+        <aside className="hidden w-56 shrink-0 bg-sidebar text-sidebar-text lg:flex lg:flex-col">
+          <div className="px-5 pb-4 pt-6">
+            <p className="text-[22px] font-bold leading-none tracking-wide text-white">
+              LOG NOW
+            </p>
+            <p className="mt-1.5 text-[13px] font-normal text-sidebar-text">
+              Capacity Planning
+            </p>
           </div>
-          <nav className="flex flex-1 flex-col gap-1 px-3 pb-6">
+          <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-2">
             {items.map((item) => {
               const active =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -58,10 +54,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   key={item.href}
                   href={item.href}
                   className={[
-                    "rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                    "rounded-md px-3 py-2 text-[13px] font-medium transition",
                     active
-                      ? "bg-accent-soft text-accent"
-                      : "text-muted hover:bg-accent-soft/60 hover:text-foreground",
+                      ? "bg-sidebar-active text-white"
+                      : "text-sidebar-text hover:bg-sidebar-hover hover:text-white",
                   ].join(" ")}
                 >
                   {item.label}
@@ -69,13 +65,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
               );
             })}
           </nav>
-          <div className="border-t border-border p-4">
-            <p className="truncate text-sm font-medium text-foreground">{user.email}</p>
-            <p className="text-xs text-muted">{getRoleLabel(user.role)}</p>
+          <div className="border-t border-white/10 p-4">
+            <p className="truncate text-sm font-medium text-white">{user.email}</p>
+            <p className="text-xs text-sidebar-text">{getRoleLabel(user.role)}</p>
             <button
               type="button"
               onClick={signOut}
-              className="mt-3 text-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="mt-3 text-sm font-medium text-sidebar-text hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active"
             >
               Sign out
             </button>
@@ -83,49 +79,58 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                <BrandMarkIcon className="h-4 w-4" />
-              </div>
-              <span className="text-sm font-bold tracking-[0.14em]">LOGNOW</span>
+          <header className="flex items-center justify-between bg-sidebar px-4 py-3 text-white lg:hidden">
+            <div>
+              <p className="text-base font-bold tracking-wide">LOG NOW</p>
+              <p className="text-[11px] text-sidebar-text">Capacity Planning</p>
             </div>
             <button
               type="button"
               aria-expanded={mobileOpen}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               onClick={() => setMobileOpen((open) => !open)}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground"
+              className="rounded-md border border-white/20 px-3 py-1.5 text-sm text-white"
             >
               Menu
             </button>
           </header>
 
           {mobileOpen ? (
-            <div className="border-b border-border bg-surface px-3 py-3 lg:hidden">
-              <nav className="flex flex-col gap-1">
-                {items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="rounded-xl px-3 py-2 text-sm font-medium text-foreground hover:bg-accent-soft"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+            <div className="bg-sidebar px-3 py-3 lg:hidden">
+              <nav className="flex flex-col gap-0.5">
+                {items.map((item) => {
+                  const active =
+                    pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={[
+                        "rounded-md px-3 py-2 text-sm font-medium",
+                        active
+                          ? "bg-sidebar-active text-white"
+                          : "text-sidebar-text hover:bg-sidebar-hover hover:text-white",
+                      ].join(" ")}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </nav>
               <button
                 type="button"
                 onClick={signOut}
-                className="mt-3 px-3 text-sm font-medium text-accent"
+                className="mt-3 px-3 text-sm font-medium text-sidebar-text hover:text-white"
               >
                 Sign out
               </button>
             </div>
           ) : null}
 
-          <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+          <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-4 sm:px-5 lg:px-6">
+            {children}
+          </main>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { apiRequest, toQueryString } from "./client";
+import { apiRequest, readCollection, toQueryString } from "./client";
 import type {
   EmployeeListQuery,
   EmployeeListResponse,
@@ -24,12 +24,12 @@ export function getEmployeeById(id: string) {
 export async function listAllEmployees(
   query: Omit<EmployeeListQuery, "page" | "limit"> = {},
 ): Promise<EmployeeResponse[]> {
-  const first = await listEmployees({ ...query, page: 1, limit: 100 });
-  const employees = [...first.data];
+  const first = readCollection(await listEmployees({ ...query, page: 1, limit: 100 }));
+  const employees = [...first.items];
 
-  for (let page = 2; page <= first.pagination.totalPages; page += 1) {
-    const next = await listEmployees({ ...query, page, limit: 100 });
-    employees.push(...next.data);
+  for (let page = 2; page <= first.totalPages; page += 1) {
+    const next = readCollection(await listEmployees({ ...query, page, limit: 100 }));
+    employees.push(...next.items);
   }
 
   return employees;
