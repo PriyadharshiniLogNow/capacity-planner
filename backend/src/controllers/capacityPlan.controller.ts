@@ -36,6 +36,11 @@ type PlanWithRelations = CapacityPlan & {
   project?: Pick<Project, "id" | "projectCode" | "name" | "status">;
 };
 
+function readDailyHours(plan: CapacityPlan): Prisma.JsonValue | null {
+  return (plan as CapacityPlan & { dailyHours?: Prisma.JsonValue | null })
+    .dailyHours ?? null;
+}
+
 const employeeSelect = {
   id: true,
   employeeCode: true,
@@ -169,7 +174,7 @@ function toCapacityPlanResponse(
     projectId: plan.projectId,
     weekStart: formatDateOnly(plan.planDate),
     plannedHours: plan.plannedHours,
-    dailyHours: parseDailyHours(plan.dailyHours),
+    dailyHours: parseDailyHours(readDailyHours(plan)),
     createdAt: plan.createdAt.toISOString(),
     createdBy: plan.createdBy,
     updatedAt: plan.updatedAt.toISOString(),
@@ -316,6 +321,7 @@ export async function buildWeekCapacitySummary(params: {
     prisma.absence.findMany({
       where: {
         employeeId: employee.id,
+        status: "APPROVED",
         startDate: { lte: weekEnd },
         endDate: { gte: weekStart },
       },
@@ -955,7 +961,7 @@ export const copyWeek = async (req: Request, res: Response) => {
         projectId: source.projectId,
         planDate: targetWeekStart,
         plannedHours: source.plannedHours,
-        dailyHours: source.dailyHours ?? Prisma.JsonNull,
+        dailyHours: readDailyHours(source) ?? Prisma.JsonNull,
         createdBy: req.user.id,
         updatedBy: req.user.id,
       },

@@ -6,19 +6,19 @@
 @source "../hooks/**/*.{js,ts,jsx,tsx,mdx}";
 
 :root {
-  --background: #f5f7fa;
-  --foreground: #001a33;
+  --background: #f7f9fc;
+  --foreground: #0b3158;
   --surface: #ffffff;
-  --border: #d8dee6;
-  --muted: #6b7280;
-  --accent: #007bff;
-  --accent-hover: #0066d6;
-  --accent-soft: #e8f2ff;
+  --border: #e3e8ef;
+  --muted: #6b7c93;
+  --accent: #0066ff;
+  --accent-hover: #0052cc;
+  --accent-soft: #e8f1ff;
   --accent-foreground: #ffffff;
-  --sidebar: #001a33;
-  --sidebar-text: #c5ced8;
-  --sidebar-hover: #0a2a4d;
-  --sidebar-active: #007bff;
+  --sidebar: #0b3158;
+  --sidebar-text: #c5d4e4;
+  --sidebar-hover: #12406e;
+  --sidebar-active: #0066ff;
   --util-under: #3b82f6;
   --util-partial: #ca8a04;
   --util-well: #16a34a;

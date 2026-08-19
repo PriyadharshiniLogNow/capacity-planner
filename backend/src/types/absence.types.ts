@@ -1,9 +1,10 @@
-import type { AbsenceType } from "@prisma/client";
+import type { AbsenceStatus, AbsenceType } from "@prisma/client";
 import type { z } from "zod";
 import type {
   absenceIdParamSchema,
   createAbsenceSchema,
   listAbsencesQuerySchema,
+  rejectAbsenceSchema,
   updateAbsenceSchema,
 } from "../schemas/absence.schema";
 
@@ -11,6 +12,7 @@ export type CreateAbsenceInput = z.infer<typeof createAbsenceSchema>;
 export type UpdateAbsenceInput = z.infer<typeof updateAbsenceSchema>;
 export type ListAbsencesQuery = z.infer<typeof listAbsencesQuerySchema>;
 export type AbsenceIdParam = z.infer<typeof absenceIdParamSchema>;
+export type RejectAbsenceInput = z.infer<typeof rejectAbsenceSchema>;
 
 export type AbsenceEmployeeSummary = {
   id: string;
@@ -28,6 +30,10 @@ export type AbsenceResponse = {
   absenceType: AbsenceType;
   hours: number;
   note: string | null;
+  status: AbsenceStatus;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
   createdAt: string;
   createdBy: string;
   updatedAt: string;
@@ -48,4 +54,9 @@ export type AbsenceListResponse = {
 export type AbsenceDeleteResponse = {
   message: string;
   absence: AbsenceResponse;
+};
+
+export type AbsenceActionResponse = {
+  message: string;
+  data: AbsenceResponse;
 };

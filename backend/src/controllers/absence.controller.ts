@@ -11,6 +11,7 @@ import {
   absenceIdParamSchema,
   createAbsenceSchema,
   listAbsencesQuerySchema,
+  rejectAbsenceSchema,
   updateAbsenceSchema,
 } from "../schemas/absence.schema";
 import type { AbsenceResponse } from "../types/absence.types";
@@ -51,6 +52,10 @@ function toAbsenceResponse(absence: AbsenceWithEmployee): AbsenceResponse {
     absenceType: absence.absenceType,
     hours: absence.hours,
     note: absence.note,
+    status: absence.status,
+    approvedBy: absence.approvedBy,
+    approvedAt: absence.approvedAt ? absence.approvedAt.toISOString() : null,
+    rejectionReason: absence.rejectionReason,
     createdAt: absence.createdAt.toISOString(),
     createdBy: absence.createdBy,
     updatedAt: absence.updatedAt.toISOString(),
@@ -166,6 +171,7 @@ async function findOverlappingAbsence(params: {
   return prisma.absence.findFirst({
     where: {
       employeeId,
+      status: { in: ["PENDING", "APPROVED"] },
       ...(excludeId ? { id: { not: excludeId } } : {}),
       startDate: { lte: endDate },
       endDate: { gte: startDate },
@@ -270,6 +276,7 @@ export const createAbsence = async (req: Request, res: Response) => {
       endDate,
       hours,
       note: data.note ?? null,
+      status: "PENDING",
       createdBy: req.user.id,
       updatedBy: req.user.id,
     },
@@ -292,7 +299,7 @@ export const listAbsences = async (req: Request, res: Response) => {
     return validationError(res, parsed.error);
   }
 
-  const { employeeId, from, to, page, limit } = parsed.data;
+  const { employeeId, from, to, status, page, limit } = parsed.data;
   const where: Prisma.AbsenceWhereInput = {};
 
   if (actorRole(req) === "EMPLOYEE") {
@@ -306,6 +313,10 @@ export const listAbsences = async (req: Request, res: Response) => {
     where.employeeId = ownEmployeeId;
   } else if (employeeId) {
     where.employeeId = employeeId;
+  }
+
+  if (status) {
+    where.status = status;
   }
 
   if (from || to) {
@@ -393,6 +404,12 @@ export const updateAbsence = async (req: Request, res: Response) => {
     return;
   }
 
+  if (existing.status === "APPROVED") {
+    return res.status(422).json({
+      message: "Approved leave requests cannot be edited.",
+    });
+  }
+
   const parsed = updateAbsenceSchema.safeParse(req.body);
   if (!parsed.success) {
     return validationError(res, parsed.error);
@@ -460,6 +477,7 @@ export const updateAbsence = async (req: Request, res: Response) => {
   }
 
   const hours = computeAbsenceHours(employee, startDate, endDate);
+  const resetRejected = existing.status === "REJECTED";
 
   const absence = await prisma.absence.update({
     where: { id: existing.id },
@@ -469,12 +487,134 @@ export const updateAbsence = async (req: Request, res: Response) => {
       absenceType: data.absenceType ?? existing.absenceType,
       note: data.note !== undefined ? data.note : existing.note,
       hours,
+      ...(resetRejected
+        ? {
+            status: "PENDING" as const,
+            approvedBy: null,
+            approvedAt: null,
+            rejectionReason: null,
+          }
+        : {}),
       updatedBy: req.user.id,
     },
     include: { employee: { select: employeeSelect } },
   });
 
   return res.status(200).json(toAbsenceResponse(absence));
+};
+
+export const approveAbsence = async (req: Request, res: Response) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const idParsed = absenceIdParamSchema.safeParse({
+    id: paramId(req.params.id),
+  });
+  if (!idParsed.success) {
+    return validationError(res, idParsed.error);
+  }
+
+  const existing = await prisma.absence.findUnique({
+    where: { id: idParsed.data.id },
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Leave request not found." });
+  }
+
+  if (existing.status === "APPROVED") {
+    return res.status(422).json({
+      message: "Leave request has already been approved.",
+    });
+  }
+
+  if (existing.status !== "PENDING") {
+    return res.status(422).json({
+      message:
+        existing.status === "REJECTED"
+          ? "Leave request has already been rejected."
+          : "Only pending leave requests can be approved.",
+    });
+  }
+
+  const absence = await prisma.absence.update({
+    where: { id: existing.id },
+    data: {
+      status: "APPROVED",
+      approvedBy: req.user.id,
+      approvedAt: new Date(),
+      rejectionReason: null,
+      updatedBy: req.user.id,
+    },
+    include: { employee: { select: employeeSelect } },
+  });
+
+  return res.status(200).json({
+    message: "Leave request approved successfully.",
+    data: toAbsenceResponse(absence),
+  });
+};
+
+export const rejectAbsence = async (req: Request, res: Response) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const idParsed = absenceIdParamSchema.safeParse({
+    id: paramId(req.params.id),
+  });
+  if (!idParsed.success) {
+    return validationError(res, idParsed.error);
+  }
+
+  const parsed = rejectAbsenceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return validationError(res, parsed.error);
+  }
+
+  const existing = await prisma.absence.findUnique({
+    where: { id: idParsed.data.id },
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Leave request not found." });
+  }
+
+  if (existing.status === "REJECTED") {
+    return res.status(422).json({
+      message: "Leave request has already been rejected.",
+    });
+  }
+
+  if (existing.status === "APPROVED") {
+    return res.status(422).json({
+      message: "Leave request has already been approved.",
+    });
+  }
+
+  if (existing.status !== "PENDING") {
+    return res.status(422).json({
+      message: "Only pending leave requests can be rejected.",
+    });
+  }
+
+  const absence = await prisma.absence.update({
+    where: { id: existing.id },
+    data: {
+      status: "REJECTED",
+      approvedBy: null,
+      approvedAt: null,
+      rejectionReason: parsed.data.rejectionReason,
+      updatedBy: req.user.id,
+    },
+    include: { employee: { select: employeeSelect } },
+  });
+
+  return res.status(200).json({
+    message: "Leave request rejected successfully.",
+    data: toAbsenceResponse(absence),
+  });
 };
 
 export const deleteAbsence = async (req: Request, res: Response) => {

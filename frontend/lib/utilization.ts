@@ -56,15 +56,13 @@ export function utilizationToneClass(level: UtilizationLevel): string {
 export function utilizationHeatmapClass(level: UtilizationLevel): string {
   switch (level) {
     case "under":
-      return "bg-utilization-under/20 text-foreground";
+      return "border border-amber-300 bg-amber-100 text-amber-800";
     case "partial":
-      return "bg-utilization-partial/25 text-foreground";
     case "well":
-      return "bg-utilization-well/25 text-foreground";
+      return "border border-emerald-300 bg-emerald-100 text-emerald-800";
     case "warning":
-      return "bg-utilization-warning/30 text-foreground";
     case "critical":
-      return "bg-utilization-critical text-white";
+      return "border border-rose-300 bg-rose-100 text-rose-700";
   }
 }
 

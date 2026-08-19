@@ -1,6 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, SVGProps } from "react";
+import {
+  AbsenceNavIcon,
+  CalendarNavIcon,
+  ClockNavIcon,
+  DashboardNavIcon,
+  FolderNavIcon,
+  UsersNavIcon,
+} from "@/components/auth/icons";
 import { getNavItems, getRoleLabel } from "@/lib/auth/roles";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
@@ -10,6 +18,22 @@ import { useEffect, useState } from "react";
 type DashboardShellProps = {
   children: ReactNode;
 };
+
+type IconComponent = (props: SVGProps<SVGSVGElement>) => ReactNode;
+
+const NAV_ICONS: Record<string, IconComponent> = {
+  "/dashboard": DashboardNavIcon,
+  "/planning": CalendarNavIcon,
+  "/time-entries": ClockNavIcon,
+  "/projects": FolderNavIcon,
+  "/employees": UsersNavIcon,
+  "/absences": AbsenceNavIcon,
+};
+
+function NavIcon({ href }: { href: string }) {
+  const Icon = NAV_ICONS[href] ?? DashboardNavIcon;
+  return <Icon className="h-4 w-4 shrink-0" />;
+}
 
 export function DashboardShell({ children }: DashboardShellProps) {
   const { user, token, signOut } = useAuth();
@@ -36,16 +60,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex min-h-screen">
-        <aside className="hidden w-56 shrink-0 bg-sidebar text-sidebar-text lg:flex lg:flex-col">
-          <div className="px-5 pb-4 pt-6">
-            <p className="text-[22px] font-bold leading-none tracking-wide text-white">
+        <aside className="sticky top-0 hidden h-screen w-40 shrink-0 flex-col bg-sidebar text-sidebar-text lg:flex">
+          <div className="px-4 pb-3 pt-5">
+            <p className="text-[15px] font-bold leading-none tracking-[0.08em] text-white">
               LOG NOW
             </p>
-            <p className="mt-1.5 text-[13px] font-normal text-sidebar-text">
+            <p className="mt-1.5 text-[11px] font-normal leading-tight text-white/70">
               Capacity Planning
             </p>
           </div>
-          <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-2">
+          <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-3.5 pt-2">
             {items.map((item) => {
               const active =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -54,24 +78,34 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   key={item.href}
                   href={item.href}
                   className={[
-                    "rounded-md px-3 py-2 text-[13px] font-medium transition",
+                    "flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] transition",
                     active
-                      ? "bg-sidebar-active text-white"
-                      : "text-sidebar-text hover:bg-sidebar-hover hover:text-white",
+                      ? "bg-sidebar-active font-semibold text-white"
+                      : "font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-white",
                   ].join(" ")}
                 >
+                  <NavIcon href={item.href} />
                   {item.label}
                 </Link>
               );
             })}
           </nav>
-          <div className="border-t border-white/10 p-4">
-            <p className="truncate text-sm font-medium text-white">{user.email}</p>
-            <p className="text-xs text-sidebar-text">{getRoleLabel(user.role)}</p>
+          <div className="border-t border-white/10 px-3.5 py-3">
+            <Link
+              href="/profile"
+              title="Open profile"
+              className={[
+                "block truncate text-[12px] font-medium text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active",
+                pathname === "/profile" ? "underline" : "",
+              ].join(" ")}
+            >
+              {user.email}
+            </Link>
+            <p className="text-[11px] text-sidebar-text">{getRoleLabel(user.role)}</p>
             <button
               type="button"
               onClick={signOut}
-              className="mt-3 text-sm font-medium text-sidebar-text hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active"
+              className="mt-2 text-[12px] font-medium text-sidebar-text hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active"
             >
               Sign out
             </button>
@@ -81,8 +115,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center justify-between bg-sidebar px-4 py-3 text-white lg:hidden">
             <div>
-              <p className="text-base font-bold tracking-wide">LOG NOW</p>
-              <p className="text-[11px] text-sidebar-text">Capacity Planning</p>
+              <p className="text-[15px] font-bold tracking-[0.08em]">LOG NOW</p>
+              <p className="text-[11px] text-white/70">Capacity Planning</p>
             </div>
             <button
               type="button"
@@ -97,7 +131,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
           {mobileOpen ? (
             <div className="bg-sidebar px-3 py-3 lg:hidden">
-              <nav className="flex flex-col gap-0.5">
+              <nav className="flex flex-col gap-2">
                 {items.map((item) => {
                   const active =
                     pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -107,28 +141,40 @@ export function DashboardShell({ children }: DashboardShellProps) {
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
                       className={[
-                        "rounded-md px-3 py-2 text-sm font-medium",
+                        "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm",
                         active
-                          ? "bg-sidebar-active text-white"
-                          : "text-sidebar-text hover:bg-sidebar-hover hover:text-white",
+                          ? "bg-sidebar-active font-semibold text-white"
+                          : "font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-white",
                       ].join(" ")}
                     >
+                      <NavIcon href={item.href} />
                       {item.label}
                     </Link>
                   );
                 })}
               </nav>
+              <Link
+                href="/profile"
+                title="Open profile"
+                onClick={() => setMobileOpen(false)}
+                className={[
+                  "mt-3 block truncate px-2.5 text-sm font-medium hover:text-white hover:underline",
+                  pathname === "/profile" ? "text-white" : "text-sidebar-text",
+                ].join(" ")}
+              >
+                {user.email}
+              </Link>
               <button
                 type="button"
                 onClick={signOut}
-                className="mt-3 px-3 text-sm font-medium text-sidebar-text hover:text-white"
+                className="mt-2 px-2.5 text-sm font-medium text-sidebar-text hover:text-white"
               >
                 Sign out
               </button>
             </div>
           ) : null}
 
-          <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-4 sm:px-5 lg:px-6">
+          <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-3.5 sm:px-4 lg:px-4">
             {children}
           </main>
         </div>

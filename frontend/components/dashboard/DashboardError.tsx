@@ -12,7 +12,7 @@ export function DashboardError({
   return (
     <section
       role="alert"
-      className="rounded-2xl border border-utilization-critical/20 bg-surface p-6 text-center"
+      className="rounded-lg border border-utilization-critical/20 bg-surface p-6 text-center shadow-[0_1px_2px_rgba(11,49,88,0.05)]"
     >
       <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       <p className="mt-2 text-sm text-muted">{message}</p>

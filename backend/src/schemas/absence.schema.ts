@@ -1,4 +1,4 @@
-import { AbsenceType } from "@prisma/client";
+import { AbsenceStatus, AbsenceType } from "@prisma/client";
 import { z } from "zod";
 
 const dateString = z
@@ -23,6 +23,10 @@ const noteSchema = z
 
 const absenceTypeSchema = z.nativeEnum(AbsenceType, {
   message: "absenceType must be VACATION, SICKNESS, PUBLIC_HOLIDAY, or OTHER",
+});
+
+const absenceStatusSchema = z.nativeEnum(AbsenceStatus, {
+  message: "status must be PENDING, APPROVED, or REJECTED",
 });
 
 export const createAbsenceSchema = z
@@ -82,6 +86,7 @@ export const listAbsencesQuerySchema = z
     employeeId: z.string().trim().min(1).optional(),
     from: dateString.optional(),
     to: dateString.optional(),
+    status: absenceStatusSchema.optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
   })
@@ -97,4 +102,12 @@ export const listAbsencesQuerySchema = z
 
 export const absenceIdParamSchema = z.object({
   id: z.string().trim().min(1, "id is required"),
+});
+
+export const rejectAbsenceSchema = z.object({
+  rejectionReason: z
+    .string()
+    .trim()
+    .min(1, "Rejection reason is required.")
+    .max(1000, "rejectionReason must be at most 1000 characters"),
 });

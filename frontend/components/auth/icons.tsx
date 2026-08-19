@@ -132,3 +132,83 @@ export function BrandMarkIcon(props: IconProps) {
     </svg>
   );
 }
+
+function navIconProps({ className, ...props }: IconProps): IconProps {
+  return {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+    className: ["h-4 w-4 shrink-0", className].filter(Boolean).join(" "),
+    ...props,
+  };
+}
+
+export function DashboardNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.2" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.2" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.2" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" />
+    </svg>
+  );
+}
+
+export function CalendarNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M8 3.5v3M16 3.5v3M3.5 10h17" />
+    </svg>
+  );
+}
+
+export function ClockNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M12 8v4.5l3 1.5" />
+    </svg>
+  );
+}
+
+export function FolderNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <path d="M3.5 7.5h6l2 2h9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 2.5 19V9A1.5 1.5 0 0 1 4 7.5Z" />
+    </svg>
+  );
+}
+
+export function UsersNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <circle cx="9" cy="8.5" r="2.75" />
+      <path d="M4.5 18c.6-2.8 2.3-4.2 4.5-4.2s3.9 1.4 4.5 4.2" />
+      <circle cx="16.5" cy="9" r="2.25" />
+      <path d="M15.2 13.9c1.7.3 3.1 1.5 3.8 4.1" />
+    </svg>
+  );
+}
+
+export function AbsenceNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <circle cx="12" cy="12" r="3.25" />
+      <path d="M12 5.5v1.5M12 17v1.5M5.5 12h1.5M17 12h1.5M7.4 7.4l1.1 1.1M15.5 15.5l1.1 1.1M7.4 16.6l1.1-1.1M15.5 8.5l1.1-1.1" />
+    </svg>
+  );
+}
+
+export function ProfileNavIcon(props: IconProps) {
+  return (
+    <svg {...navIconProps(props)}>
+      <circle cx="12" cy="8" r="3.25" />
+      <path d="M5.5 19.5c1.4-3 3.7-4.5 6.5-4.5s5.1 1.5 6.5 4.5" />
+    </svg>
+  );
+}

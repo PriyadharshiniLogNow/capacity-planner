@@ -172,25 +172,36 @@ enum AbsenceType {
   OTHER
 }
 
+enum AbsenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Absence {
-  id          String      @id @default(cuid())
-  employeeId  String
-  absenceType AbsenceType
-  startDate   DateTime    @db.Date
-  endDate     DateTime    @db.Date
+  id               String        @id @default(cuid())
+  employeeId       String
+  absenceType      AbsenceType
+  startDate        DateTime      @db.Date
+  endDate          DateTime      @db.Date
   /// Total absence hours across the date range (working days only).
-  hours       Float
-  note        String?
-  createdAt   DateTime    @default(now())
-  createdBy   String
-  updatedAt   DateTime    @updatedAt
-  updatedBy   String
+  hours            Float
+  note             String?
+  status           AbsenceStatus @default(PENDING)
+  approvedBy       String?
+  approvedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime      @default(now())
+  createdBy        String
+  updatedAt        DateTime      @updatedAt
+  updatedBy        String
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
   @@index([startDate])
   @@index([endDate])
+  @@index([status])
   @@index([employeeId, startDate, endDate])
   @@map("absences")
 }

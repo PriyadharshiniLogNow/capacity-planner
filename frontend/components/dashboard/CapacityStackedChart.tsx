@@ -1,5 +1,5 @@
 import type { ChartWeek } from "@/hooks/useDashboard";
-import { formatShortDate } from "@/lib/date/weeks";
+import { formatIsoWeekNumber } from "@/lib/date/weeks";
 import { formatHours } from "@/lib/utilization";
 
 type CapacityStackedChartProps = {
@@ -7,14 +7,10 @@ type CapacityStackedChartProps = {
 };
 
 const SERIES = [
-  { key: "customerHours", label: "Customer", className: "bg-accent" },
-  { key: "internalHours", label: "Internal", className: "bg-[#7c9cff]" },
-  { key: "freeHours", label: "Free", className: "bg-utilization-well" },
-  {
-    key: "overallocatedHours",
-    label: "Overallocated",
-    className: "bg-utilization-critical",
-  },
+  { key: "customerHours", label: "Customer", className: "bg-emerald-500" },
+  { key: "internalHours", label: "Internal", className: "bg-blue-500" },
+  { key: "freeHours", label: "Free", className: "bg-amber-400" },
+  { key: "overallocatedHours", label: "Over", className: "bg-rose-500" },
 ] as const;
 
 export function CapacityStackedChart({ weeks }: CapacityStackedChartProps) {
@@ -30,27 +26,32 @@ export function CapacityStackedChart({ weeks }: CapacityStackedChartProps) {
   );
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">
-            Six-week capacity
-          </h2>
-          <p className="text-sm text-muted">Hours by week · Customer, Internal, Free, Overallocated</p>
-        </div>
-        <ul className="flex flex-wrap gap-3 text-xs text-muted">
+    <section className="flex h-full flex-col rounded-lg border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(11,49,88,0.05)]">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-[15px] font-bold text-foreground">
+          6-Week Capacity Overview
+        </h2>
+        <ul className="flex flex-wrap gap-3 text-[11px] text-muted">
           {SERIES.map((series) => (
             <li key={series.key} className="inline-flex items-center gap-1.5">
-              <span className={`h-2.5 w-2.5 rounded-sm ${series.className}`} />
+              <span className={`h-2.5 w-2.5 rounded-[2px] ${series.className}`} />
               {series.label}
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="flex min-w-[36rem] items-end gap-3 sm:gap-4">
-          {weeks.map((week, index) => {
+      <div className="min-h-0 flex-1 overflow-x-auto">
+        <div
+          className="flex h-[220px] min-w-[28rem] items-end justify-around gap-3 px-1 pb-1"
+          style={{
+            backgroundImage:
+              "linear-gradient(to top, var(--border) 1px, transparent 1px)",
+            backgroundSize: "100% 25%",
+            backgroundPosition: "bottom",
+          }}
+        >
+          {weeks.map((week) => {
             const total =
               week.customerHours +
               week.internalHours +
@@ -59,45 +60,55 @@ export function CapacityStackedChart({ weeks }: CapacityStackedChartProps) {
             const columnHeight = `${Math.max(8, (total / maxTotal) * 100)}%`;
 
             return (
-              <div key={week.weekStart} className="flex min-w-0 flex-1 flex-col items-center">
-                <div className="flex h-56 w-full items-end">
+              <div
+                key={week.weekStart}
+                className="flex h-full min-w-0 flex-1 flex-col items-center"
+              >
+                <div className="flex w-full flex-1 items-end justify-center">
                   {total === 0 ? (
-                    <div className="h-2 w-full rounded-xl bg-border" />
+                    <div className="h-1.5 w-8 rounded-sm bg-border" />
                   ) : (
                     <div
-                      className="flex w-full flex-col justify-end overflow-hidden rounded-xl"
+                      className="flex w-9 flex-col justify-end overflow-hidden rounded-t-md sm:w-11"
                       style={{ height: columnHeight }}
                       title={`Customer ${formatHours(week.customerHours)} · Internal ${formatHours(week.internalHours)} · Free ${formatHours(week.freeHours)} · Over ${formatHours(week.overallocatedHours)}`}
                     >
                       {week.overallocatedHours > 0 ? (
                         <div
-                          className="bg-utilization-critical"
-                          style={{ height: `${(week.overallocatedHours / total) * 100}%` }}
+                          className="bg-rose-500"
+                          style={{
+                            height: `${(week.overallocatedHours / total) * 100}%`,
+                          }}
                         />
                       ) : null}
                       {week.freeHours > 0 ? (
                         <div
-                          className="bg-utilization-well"
+                          className="bg-amber-400"
                           style={{ height: `${(week.freeHours / total) * 100}%` }}
                         />
                       ) : null}
                       {week.internalHours > 0 ? (
                         <div
-                          className="bg-[#7c9cff]"
-                          style={{ height: `${(week.internalHours / total) * 100}%` }}
+                          className="bg-blue-500"
+                          style={{
+                            height: `${(week.internalHours / total) * 100}%`,
+                          }}
                         />
                       ) : null}
                       {week.customerHours > 0 ? (
                         <div
-                          className="bg-accent"
-                          style={{ height: `${(week.customerHours / total) * 100}%` }}
+                          className="bg-emerald-500"
+                          style={{
+                            height: `${(week.customerHours / total) * 100}%`,
+                          }}
                         />
                       ) : null}
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-xs font-medium text-foreground">W{index + 1}</p>
-                <p className="text-[11px] text-muted">{formatShortDate(week.weekStart)}</p>
+                <p className="mt-2 text-[11px] font-medium text-muted">
+                  {formatIsoWeekNumber(week.weekStart)}
+                </p>
               </div>
             );
           })}

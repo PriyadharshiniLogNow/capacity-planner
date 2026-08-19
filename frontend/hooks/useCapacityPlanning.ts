@@ -276,6 +276,7 @@ export function useCapacityPlanning() {
             employeeId,
             from: horizonStart,
             to: getPeriodEnd(horizonStart),
+            status: "APPROVED",
           }),
           listAllCapacityPlans({ employeeId, weekStart }),
         ]);

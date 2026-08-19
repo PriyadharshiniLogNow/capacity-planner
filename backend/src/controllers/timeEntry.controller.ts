@@ -160,6 +160,7 @@ async function findCoveringAbsence(
   return prisma.absence.findFirst({
     where: {
       employeeId,
+      status: "APPROVED",
       startDate: { lte: entryDate },
       endDate: { gte: entryDate },
     },

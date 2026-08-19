@@ -60,6 +60,20 @@ export function formatShortDate(value: string): string {
   }).format(parseDateOnly(value));
 }
 
+/** ISO-8601 week label for display only, e.g. W32. */
+export function formatIsoWeekNumber(weekStart: string): string {
+  const date = parseDateOnly(weekStart);
+  const thursday = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  thursday.setUTCDate(thursday.getUTCDate() + 4 - (thursday.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(
+    ((thursday.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return `W${weekNo}`;
+}
+
 export function formatPeriodRange(periodStart: string): string {
   return `${formatShortDate(periodStart)} – ${formatShortDate(getPeriodEnd(periodStart))}`;
 }

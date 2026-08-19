@@ -1,5 +1,7 @@
 export type AbsenceType = "VACATION" | "SICKNESS" | "PUBLIC_HOLIDAY" | "OTHER";
 
+export type AbsenceStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export type AbsenceEmployeeSummary = {
   id: string;
   employeeCode: string;
@@ -16,6 +18,10 @@ export type AbsenceResponse = {
   absenceType: AbsenceType;
   hours: number;
   note: string | null;
+  status: AbsenceStatus;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
   createdAt: string;
   createdBy: string;
   updatedAt: string;
@@ -23,12 +29,40 @@ export type AbsenceResponse = {
   employee?: AbsenceEmployeeSummary;
 };
 
+export type CreateAbsenceRequest = {
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  absenceType: AbsenceType;
+  note?: string | null;
+};
+
+export type UpdateAbsenceRequest = {
+  startDate?: string;
+  endDate?: string;
+  absenceType?: AbsenceType;
+  note?: string | null;
+};
+
+export type RejectAbsenceRequest = {
+  rejectionReason: string;
+};
+
 export type AbsenceListQuery = {
   employeeId?: string;
   from?: string;
   to?: string;
+  status?: AbsenceStatus;
   page?: number;
   limit?: number;
+};
+
+export type AbsenceFilterState = {
+  employeeId: string;
+  absenceType: AbsenceType | "";
+  status: AbsenceStatus | "";
+  from: string;
+  to: string;
 };
 
 export type AbsenceListResponse = {
@@ -39,4 +73,14 @@ export type AbsenceListResponse = {
     total: number;
     totalPages: number;
   };
+};
+
+export type AbsenceDeleteResponse = {
+  message: string;
+  absence: AbsenceResponse;
+};
+
+export type AbsenceActionResponse = {
+  message: string;
+  data: AbsenceResponse;
 };

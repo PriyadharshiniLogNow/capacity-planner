@@ -1,39 +1,38 @@
-import {
-  getUtilizationStatus,
-  utilizationToneClass,
-} from "@/lib/utilization";
+type KpiTone = "planned" | "actual" | "billable" | "free" | "over";
 
 type DashboardKpiCardProps = {
   title: string;
   value: string;
-  hint?: string;
-  utilization?: number;
+  tone: KpiTone;
 };
 
-export function DashboardKpiCard({
-  title,
-  value,
-  hint,
-  utilization,
-}: DashboardKpiCardProps) {
-  const status =
-    utilization === undefined ? null : getUtilizationStatus(utilization);
+const cardToneClass: Record<KpiTone, string> = {
+  planned: "border-blue-200 bg-blue-50",
+  actual: "border-violet-200 bg-violet-50",
+  billable: "border-emerald-200 bg-emerald-50",
+  free: "border-amber-200 bg-amber-50",
+  over: "border-rose-200 bg-rose-50",
+};
 
+const valueToneClass: Record<KpiTone, string> = {
+  planned: "text-blue-600",
+  actual: "text-violet-600",
+  billable: "text-emerald-600",
+  free: "text-amber-600",
+  over: "text-rose-600",
+};
+
+export function DashboardKpiCard({ title, value, tone }: DashboardKpiCardProps) {
   return (
-    <article className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-      <p className="text-sm font-medium text-muted">{title}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+    <article
+      className={`flex min-h-[70px] flex-col justify-center rounded-lg border px-3.5 py-2.5 shadow-[0_1px_2px_rgba(11,49,88,0.04)] ${cardToneClass[tone]}`}
+    >
+      <p className="text-[11px] font-medium leading-tight text-muted">{title}</p>
+      <p
+        className={`mt-1 text-[21px] font-bold leading-none tracking-tight tabular-nums ${valueToneClass[tone]}`}
+      >
         {value}
       </p>
-      {status ? (
-        <p
-          className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${utilizationToneClass(status.level)}`}
-        >
-          {status.label}
-        </p>
-      ) : hint ? (
-        <p className="mt-3 text-xs text-muted">{hint}</p>
-      ) : null}
     </article>
   );
 }

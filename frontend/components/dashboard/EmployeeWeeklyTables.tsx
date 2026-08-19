@@ -18,9 +18,9 @@ export function EmployeeWeeklyTables({ weeks, projects }: EmployeeWeeklyTablesPr
     .filter((row) => row.missingHours > 0);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-        <h2 className="text-base font-semibold text-foreground">My weekly capacity</h2>
+    <div className="space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(11,49,88,0.05)]">
+        <h2 className="text-[15px] font-bold text-foreground">My weekly capacity</h2>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -53,8 +53,8 @@ export function EmployeeWeeklyTables({ weeks, projects }: EmployeeWeeklyTablesPr
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-        <h2 className="text-base font-semibold text-foreground">My missing hours</h2>
+      <section className="rounded-lg border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(11,49,88,0.05)]">
+        <h2 className="text-[15px] font-bold text-foreground">My missing hours</h2>
         <p className="mb-4 text-sm text-muted">
           Planned productive hours not yet matched by actual time
         </p>
@@ -82,8 +82,8 @@ export function EmployeeWeeklyTables({ weeks, projects }: EmployeeWeeklyTablesPr
         )}
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-        <h2 className="text-base font-semibold text-foreground">My projects</h2>
+      <section className="rounded-lg border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(11,49,88,0.05)]">
+        <h2 className="text-[15px] font-bold text-foreground">My projects</h2>
         {projects.length === 0 ? (
           <p className="mt-2 text-sm text-muted">No planned or actual hours on projects.</p>
         ) : (

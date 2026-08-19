@@ -188,8 +188,10 @@ export function buildPlanningDays(
     const weekday = isoWeekday(date);
     const isWorkingDay = working.has(weekday);
     const isEmployeeValid = isEmployeeActiveOnDate(employee, date);
-    const covering = absences.filter((absence) =>
-      isDateInRange(date, absence.startDate, absence.endDate),
+    const covering = absences.filter(
+      (absence) =>
+        absence.status === "APPROVED" &&
+        isDateInRange(date, absence.startDate, absence.endDate),
     );
     const holiday = covering.find(
       (absence) => absence.absenceType === "PUBLIC_HOLIDAY",

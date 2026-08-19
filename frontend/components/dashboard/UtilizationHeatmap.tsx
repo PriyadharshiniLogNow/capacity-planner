@@ -1,5 +1,5 @@
 import type { HeatmapRow } from "@/hooks/useDashboard";
-import { formatShortDate } from "@/lib/date/weeks";
+import { formatIsoWeekNumber } from "@/lib/date/weeks";
 import {
   formatPercent,
   getUtilizationStatus,
@@ -13,20 +13,23 @@ type UtilizationHeatmapProps = {
 
 export function UtilizationHeatmap({ rows, weekStarts }: UtilizationHeatmapProps) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-      <h2 className="text-base font-semibold text-foreground">Utilization heatmap</h2>
-      <p className="mb-4 text-sm text-muted">Employee × week planned utilization</p>
-      <div className="overflow-x-auto">
-        <table className="min-w-[40rem] w-full border-separate border-spacing-1 text-sm">
+    <section className="rounded-lg border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(11,49,88,0.05)]">
+      <h2 className="text-[15px] font-bold text-foreground">
+        Resource Utilization Heatmap
+      </h2>
+      <div className="mt-3 overflow-x-auto">
+        <table className="min-w-[36rem] w-full border-separate border-spacing-x-1.5 border-spacing-y-1.5 text-[12px]">
           <thead>
             <tr>
-              <th className="px-2 py-1 text-left font-medium text-muted">Employee</th>
-              {weekStarts.map((weekStart, index) => (
-                <th key={weekStart} className="px-2 py-1 text-center font-medium text-muted">
-                  W{index + 1}
-                  <span className="mt-0.5 block text-[11px] font-normal">
-                    {formatShortDate(weekStart)}
-                  </span>
+              <th className="px-1 py-1 text-left text-[11px] font-semibold text-muted">
+                Employee
+              </th>
+              {weekStarts.map((weekStart) => (
+                <th
+                  key={weekStart}
+                  className="px-1 py-1 text-center text-[11px] font-semibold text-muted"
+                >
+                  {formatIsoWeekNumber(weekStart)}
                 </th>
               ))}
             </tr>
@@ -34,15 +37,15 @@ export function UtilizationHeatmap({ rows, weekStarts }: UtilizationHeatmapProps
           <tbody>
             {rows.map((row) => (
               <tr key={row.employeeId}>
-                <td className="whitespace-nowrap px-2 py-1 font-medium text-foreground">
+                <td className="whitespace-nowrap px-1 py-0.5 font-medium text-foreground">
                   {row.name}
                 </td>
                 {weekStarts.map((weekStart) => {
                   const cell = row.cells.find((item) => item.weekStart === weekStart);
                   if (!cell) {
                     return (
-                      <td key={weekStart} className="px-1 py-1">
-                        <div className="rounded-lg bg-border/40 px-2 py-2 text-center text-xs text-muted">
+                      <td key={weekStart} className="px-0 py-0">
+                        <div className="min-w-[3.25rem] rounded-md bg-border/40 px-2 py-1.5 text-center text-[11px] text-muted">
                           —
                         </div>
                       </td>
@@ -50,9 +53,9 @@ export function UtilizationHeatmap({ rows, weekStarts }: UtilizationHeatmapProps
                   }
                   const status = getUtilizationStatus(cell.utilization);
                   return (
-                    <td key={weekStart} className="px-1 py-1">
+                    <td key={weekStart} className="px-0 py-0">
                       <div
-                        className={`rounded-lg px-2 py-2 text-center text-xs font-semibold ${utilizationHeatmapClass(status.level)}`}
+                        className={`min-w-[3.25rem] rounded-md px-2 py-1.5 text-center text-[11px] font-semibold ${utilizationHeatmapClass(status.level)}`}
                       >
                         {formatPercent(cell.utilization)}
                       </div>

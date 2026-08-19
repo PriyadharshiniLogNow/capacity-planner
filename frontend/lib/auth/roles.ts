@@ -30,29 +30,28 @@ export function isEmployeeRole(role: Role): boolean {
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/employees", label: "Employees" },
-  { href: "/projects", label: "Projects" },
   { href: "/planning", label: "Planning" },
-  { href: "/time-entries", label: "Time Entries" },
+  { href: "/time-entries", label: "Time Entry" },
+  { href: "/projects", label: "Projects" },
+  { href: "/employees", label: "Employees" },
   { href: "/absences", label: "Absences" },
 ];
 
 const SUPERVISOR_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/employees", label: "Employees" },
-  { href: "/projects", label: "Projects" },
   { href: "/planning", label: "Planning" },
-  { href: "/time-entries", label: "Time Entries" },
+  { href: "/time-entries", label: "Time Entry" },
+  { href: "/projects", label: "Projects" },
+  { href: "/employees", label: "Employees" },
   { href: "/absences", label: "Absences" },
 ];
 
 const EMPLOYEE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/profile", label: "Profile" },
-  { href: "/projects", label: "Projects" },
   { href: "/planning", label: "Planning" },
-  { href: "/time-entries", label: "Time Entries" },
-  { href: "/absences", label: "Absences" },
+  { href: "/time-entries", label: "Time Entry" },
+  { href: "/projects", label: "Projects" },
+  { href: "/absences", label: "My Absences" },
 ];
 
 export function getNavItems(role: Role): NavItem[] {
@@ -67,6 +66,10 @@ export function getNavItems(role: Role): NavItem[] {
 }
 
 export function canAccessPath(role: Role, pathname: string): boolean {
+  if (pathname === "/profile" || pathname.startsWith("/profile/")) {
+    return true;
+  }
+
   return getNavItems(role).some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
