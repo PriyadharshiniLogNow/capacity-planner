@@ -1,8 +1,10 @@
 import { apiRequest, toQueryString } from "./client";
 import type {
+  CreateEmployeePayload,
   EmployeeListQuery,
   EmployeeListResponse,
   EmployeeResponse,
+  EmployeeWritePayload,
 } from "@/types/employee.types";
 
 export function listEmployees(query: EmployeeListQuery = {}) {
@@ -19,6 +21,31 @@ export function listEmployees(query: EmployeeListQuery = {}) {
 
 export function getEmployeeById(id: string) {
   return apiRequest<EmployeeResponse>(`/api/employees/${id}`);
+}
+
+export async function createEmployee(payload: CreateEmployeePayload) {
+  const response = await apiRequest<{
+    message: string;
+    data: { employee: EmployeeResponse };
+  }>("/api/employees", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.data.employee;
+}
+
+export function updateEmployee(id: string, payload: EmployeeWritePayload) {
+  return apiRequest<EmployeeResponse>(`/api/employees/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deactivateEmployee(id: string) {
+  return apiRequest<{ message: string; employee: EmployeeResponse }>(
+    `/api/employees/${id}`,
+    { method: "DELETE" },
+  );
 }
 
 export async function listAllEmployees(

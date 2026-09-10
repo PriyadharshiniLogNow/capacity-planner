@@ -6,6 +6,7 @@ import {
   buildWeekCapacitySummary,
   weekEndFromStart,
 } from "./capacityPlan.controller";
+import { employeeCountsTowardDefaultCapacityPool } from "../lib/capacityPolicy";
 import { prisma } from "../lib/prisma";
 import { dashboardQuerySchema } from "../schemas/dashboard.schema";
 import type { DashboardResponse } from "../types/dashboard.types";
@@ -205,10 +206,12 @@ export const getDashboard = async (req: Request, res: Response) => {
   } else {
     const activeEmployees = await prisma.employee.findMany({
       where: { status: "ACTIVE" },
-      select: { id: true },
+      select: { id: true, status: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     });
-    capacityEmployeeIds = activeEmployees.map((e) => e.id);
+    capacityEmployeeIds = activeEmployees
+      .filter((e) => employeeCountsTowardDefaultCapacityPool(e.status))
+      .map((e) => e.id);
   }
 
   let weeklyCapacity = 0;

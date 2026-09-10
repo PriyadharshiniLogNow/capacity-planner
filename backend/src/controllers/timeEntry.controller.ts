@@ -14,8 +14,12 @@ import {
   timeEntryIdParamSchema,
   updateTimeEntrySchema,
 } from "../schemas/timeEntry.schema";
+import { assertEmployeeProjectEligible } from "../services/eligibility.service";
 import type { TimeEntryResponse } from "../types/timeEntry.types";
-import { formatDateOnly, parseDateOnly } from "../utils/date";
+import {
+  formatDateOnly,
+  parseDateOnly,
+} from "../utils/date";
 
 type TimeEntryWithRelations = TimeEntry & {
   employee?: Pick<
@@ -130,29 +134,6 @@ function assertEmployeeOwnership(
   return true;
 }
 
-function isWithinEmploymentPeriod(
-  employee: { startDate: Date; endDate: Date | null },
-  entryDate: Date,
-): boolean {
-  if (entryDate.getTime() < employee.startDate.getTime()) {
-    return false;
-  }
-  if (employee.endDate && entryDate.getTime() > employee.endDate.getTime()) {
-    return false;
-  }
-  return true;
-}
-
-function isWithinProjectPeriod(
-  project: { startDate: Date; endDate: Date },
-  entryDate: Date,
-): boolean {
-  return (
-    entryDate.getTime() >= project.startDate.getTime() &&
-    entryDate.getTime() <= project.endDate.getTime()
-  );
-}
-
 async function findCoveringAbsence(
   employeeId: string,
   entryDate: Date,
@@ -198,71 +179,19 @@ async function validateTimeEntryRules(params: {
   const { employeeId, projectId, entryDate, actualHours, excludeId, res } =
     params;
 
-  const [employee, project] = await Promise.all([
-    prisma.employee.findUnique({ where: { id: employeeId } }),
-    prisma.project.findUnique({ where: { id: projectId } }),
-  ]);
+  const eligibility = await assertEmployeeProjectEligible({
+    employeeId,
+    projectId,
+    purpose: "time_entry",
+    entryDate,
+  });
 
-  if (!employee) {
-    res.status(404).json({
-      error: {
-        code: "EMPLOYEE_NOT_FOUND",
-        message: "Employee not found",
-      },
-    });
+  if (!eligibility.ok) {
+    res.status(eligibility.status).json(eligibility.body);
     return { ok: false };
   }
 
-  if (!project) {
-    res.status(404).json({
-      error: {
-        code: "PROJECT_NOT_FOUND",
-        message: "Project not found",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (employee.status !== "ACTIVE") {
-    res.status(422).json({
-      error: {
-        code: "INVALID_TIME_ENTRY_DATE",
-        message: "Employee must be ACTIVE to log time",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (!isWithinEmploymentPeriod(employee, entryDate)) {
-    res.status(422).json({
-      error: {
-        code: "INVALID_TIME_ENTRY_DATE",
-        message:
-          "Time entry date must fall within the employee's employment period",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (project.status !== "OPEN") {
-    res.status(422).json({
-      error: {
-        code: "INVALID_TIME_ENTRY_DATE",
-        message: "Time entries can only be logged against OPEN projects",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (!isWithinProjectPeriod(project, entryDate)) {
-    res.status(422).json({
-      error: {
-        code: "INVALID_TIME_ENTRY_DATE",
-        message: "Time entry date must fall within the project date range",
-      },
-    });
-    return { ok: false };
-  }
+  const { employee } = eligibility;
 
   if (!employee.workingDays.includes(isoWeekday(entryDate))) {
     res.status(422).json({

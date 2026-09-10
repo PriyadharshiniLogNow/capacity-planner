@@ -17,6 +17,7 @@
     "db:studio": "npm run db:studio --workspace=backend",
     "db:reset": "npm run db:reset --workspace=backend",
     "db:check": "npm run db:check --workspace=backend",
-    "typecheck:api": "npm run typecheck --workspace=backend"
+    "typecheck:api": "npm run typecheck --workspace=backend",
+    "test:api": "npm run test --workspace=backend"
   }
 }
