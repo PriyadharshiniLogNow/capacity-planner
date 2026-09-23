@@ -1,10 +1,11 @@
-import type { EmployeeStatus, Role } from "@prisma/client";
+import type { EmployeeStatus } from "@prisma/client";
 import type { z } from "zod";
 import type {
   createEmployeeSchema,
   listEmployeesQuerySchema,
   updateEmployeeSchema,
 } from "../schemas/employee.schema";
+import type { EmployeeSupervisorSummary } from "../lib/employeeMapper";
 
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
@@ -16,10 +17,11 @@ export type EmployeeResponse = {
   employeeCode: string;
   firstName: string;
   lastName: string;
-  email: string | null;
+  email: string;
   role: string;
   department: string;
-  managerId: string | null;
+  supervisorId: string | null;
+  supervisor: EmployeeSupervisorSummary | null;
   weeklyHours: number;
   workingDays: number[];
   startDate: string;
@@ -35,11 +37,6 @@ export type EmployeeCreateResponse = {
   message: string;
   data: {
     employee: EmployeeResponse;
-    user: {
-      id: string;
-      email: string;
-      role: Role;
-    };
   };
 };
 

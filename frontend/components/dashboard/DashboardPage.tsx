@@ -51,7 +51,7 @@ export function DashboardPage() {
         employees={dashboard.employees}
         projects={dashboard.projects}
         departments={dashboard.departments}
-        managers={dashboard.managers}
+        supervisors={dashboard.supervisors}
         compact={isEmployee}
       />
 

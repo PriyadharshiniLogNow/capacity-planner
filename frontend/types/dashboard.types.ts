@@ -54,7 +54,7 @@ export type DashboardApiEnvelope = {
 export type DashboardFilterState = {
   periodStart: string;
   department: string;
-  managerId: string;
+  supervisorId: string;
   employeeId: string;
   projectId: string;
   projectType: "" | "CUSTOMER" | "INTERNAL";

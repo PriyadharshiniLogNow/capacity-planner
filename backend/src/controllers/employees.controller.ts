@@ -1,18 +1,27 @@
-import { Prisma, type Employee } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
+import { toEmployeeResponse } from "../lib/employeeMapper";
+import {
+  isDirectCircularSupervision,
+  isInactiveSupervisorSelection,
+  isSelfSupervision,
+  isSupervisorRequired,
+  SUPERVISOR_MESSAGES,
+} from "../lib/supervisorPolicy";
+import {
+  employeeEmailConflictBody,
+  employeeIdConflictBody,
+  isPrismaUniqueConstraintError,
+  uniqueConstraintIncludes,
+} from "../lib/uniqueConstraint";
 import { prisma } from "../lib/prisma";
 import {
   createEmployeeSchema,
   listEmployeesQuerySchema,
   updateEmployeeSchema,
 } from "../schemas/employee.schema";
-import { formatDateOnly, parseDateOnly } from "../utils/date";
-import { hashPassword } from "../utils/password";
-
-type EmployeeWithUserEmail = Employee & {
-  user?: { email: string } | null;
-};
+import { parseDateOnly } from "../utils/date";
 
 function validationError(res: Response, error: ZodError) {
   return res.status(422).json({
@@ -21,57 +30,96 @@ function validationError(res: Response, error: ZodError) {
   });
 }
 
+function fieldError(res: Response, field: string, message: string) {
+  return res.status(422).json({
+    message: "Validation failed",
+    errors: {
+      formErrors: [] as string[],
+      fieldErrors: { [field]: [message] },
+    },
+  });
+}
+
 function paramId(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function toEmployeeResponse(employee: EmployeeWithUserEmail) {
-  return {
-    id: employee.id,
-    employeeCode: employee.employeeCode,
-    firstName: employee.firstName,
-    lastName: employee.lastName,
-    email: employee.user?.email ?? null,
-    role: employee.role,
-    department: employee.department,
-    managerId: employee.managerId,
-    weeklyHours: employee.weeklyHours,
-    workingDays: employee.workingDays,
-    startDate: formatDateOnly(employee.startDate),
-    endDate: employee.endDate ? formatDateOnly(employee.endDate) : null,
-    status: employee.status,
-    createdAt: employee.createdAt.toISOString(),
-    createdBy: employee.createdBy,
-    updatedAt: employee.updatedAt.toISOString(),
-    updatedBy: employee.updatedBy,
-  };
-}
-
-const employeeUserInclude = {
-  user: {
-    select: { email: true },
+const employeeListInclude = {
+  supervisor: {
+    select: {
+      id: true,
+      employeeCode: true,
+      firstName: true,
+      lastName: true,
+    },
   },
 } as const;
 
-async function assertManagerExists(
-  managerId: string | null | undefined,
+async function assertValidSupervisor(
+  params: {
+    employeeId?: string;
+    supervisorId: string | null;
+    currentSupervisorId?: string | null;
+  },
   res: Response,
 ): Promise<boolean> {
-  if (!managerId) {
+  const { employeeId, supervisorId, currentSupervisorId } = params;
+
+  const eligibleCount = await prisma.employee.count({
+    where: {
+      status: "ACTIVE",
+      ...(employeeId ? { id: { not: employeeId } } : {}),
+    },
+  });
+
+  if (!supervisorId) {
+    if (isSupervisorRequired(eligibleCount)) {
+      fieldError(res, "supervisorId", SUPERVISOR_MESSAGES.required);
+      return false;
+    }
     return true;
   }
 
-  const manager = await prisma.employee.findUnique({
-    where: { id: managerId },
-    select: { id: true },
+  if (isSelfSupervision(employeeId, supervisorId)) {
+    fieldError(res, "supervisorId", SUPERVISOR_MESSAGES.self);
+    return false;
+  }
+
+  const supervisor = await prisma.employee.findUnique({
+    where: { id: supervisorId },
+    select: { id: true, status: true, supervisorId: true },
   });
 
-  if (!manager) {
-    res.status(404).json({ message: "Manager not found" });
+  if (!supervisor) {
+    res.status(404).json({ message: SUPERVISOR_MESSAGES.notFound });
+    return false;
+  }
+
+  if (isDirectCircularSupervision(employeeId, supervisor.supervisorId)) {
+    fieldError(res, "supervisorId", SUPERVISOR_MESSAGES.circular);
+    return false;
+  }
+
+  if (
+    isInactiveSupervisorSelection({
+      supervisorStatus: supervisor.status,
+      selectedSupervisorId: supervisorId,
+      currentSupervisorId,
+    })
+  ) {
+    fieldError(res, "supervisorId", SUPERVISOR_MESSAGES.inactive);
     return false;
   }
 
   return true;
+}
+
+function duplicateEmployeeId(res: Response) {
+  return res.status(409).json(employeeIdConflictBody());
+}
+
+function duplicateEmail(res: Response) {
+  return res.status(409).json(employeeEmailConflictBody());
 }
 
 export const createEmployee = async (req: Request, res: Response) => {
@@ -87,99 +135,56 @@ export const createEmployee = async (req: Request, res: Response) => {
   const data = parsed.data;
   const actorId = req.user.id;
 
-  if (!(await assertManagerExists(data.managerId, res))) {
+  if (
+    !(await assertValidSupervisor(
+      { supervisorId: data.supervisorId },
+      res,
+    ))
+  ) {
     return;
   }
 
-  const existingUser = await prisma.user.findUnique({
+  const existingEmail = await prisma.employee.findUnique({
     where: { email: data.email },
     select: { id: true },
   });
-
-  if (existingUser) {
-    return res.status(409).json({
-      error: {
-        code: "EMAIL_ALREADY_EXISTS",
-        message: "An account with this email already exists",
-      },
-    });
+  if (existingEmail) {
+    return duplicateEmail(res);
   }
 
   try {
-    const { employee, user } = await prisma.$transaction(async (tx) => {
-      const employee = await tx.employee.create({
-        data: {
-          employeeCode: data.employeeCode,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          role: data.role,
-          department: data.department,
-          weeklyHours: data.weeklyHours,
-          workingDays: data.workingDays,
-          startDate: parseDateOnly(data.startDate),
-          endDate: data.endDate ? parseDateOnly(data.endDate) : null,
-          status: data.status,
-          createdBy: actorId,
-          updatedBy: actorId,
-          managerId: data.managerId ?? null,
-        },
-      });
-
-      const passwordHash = await hashPassword(data.password);
-
-      const user = await tx.user.create({
-        data: {
-          email: data.email,
-          passwordHash,
-          role: "EMPLOYEE",
-          employeeId: employee.id,
-        },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-        },
-      });
-
-      return { employee, user };
+    const created = await prisma.employee.create({
+      data: {
+        employeeCode: data.employeeCode,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+        department: data.department,
+        weeklyHours: data.weeklyHours,
+        workingDays: data.workingDays,
+        startDate: parseDateOnly(data.startDate),
+        endDate: data.endDate ? parseDateOnly(data.endDate) : null,
+        status: data.status,
+        createdBy: actorId,
+        updatedBy: actorId,
+        supervisorId: data.supervisorId,
+      },
+      include: employeeListInclude,
     });
 
     return res.status(201).json({
-      message: "Employee and login account created successfully",
+      message: "Employee created successfully",
       data: {
-        employee: toEmployeeResponse({
-          ...employee,
-          user: { email: user.email },
-        }),
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        },
+        employee: toEmployeeResponse(created),
       },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      const target = error.meta?.target;
-      const fields = Array.isArray(target)
-        ? target.map(String)
-        : typeof target === "string"
-          ? [target]
-          : [];
-
-      if (fields.some((field) => field.includes("email"))) {
-        return res.status(409).json({
-          error: {
-            code: "EMAIL_ALREADY_EXISTS",
-            message: "An account with this email already exists",
-          },
-        });
+    if (isPrismaUniqueConstraintError(error)) {
+      if (uniqueConstraintIncludes(error, "email")) {
+        return duplicateEmail(res);
       }
-
-      return res.status(409).json({ message: "employeeCode already exists" });
+      return duplicateEmployeeId(res);
     }
     throw error;
   }
@@ -217,12 +222,12 @@ export const listEmployees = async (req: Request, res: Response) => {
       skip,
       take: limit,
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      include: employeeUserInclude,
+      include: employeeListInclude,
     }),
   ]);
 
   return res.status(200).json({
-    data: employees.map(toEmployeeResponse),
+    data: employees.map((employee) => toEmployeeResponse(employee)),
     pagination: {
       page,
       limit,
@@ -237,7 +242,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 
   const employee = await prisma.employee.findUnique({
     where: { id },
-    include: employeeUserInclude,
+    include: employeeListInclude,
   });
 
   if (!employee) {
@@ -269,14 +274,16 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
   const data = parsed.data;
 
-  if (data.managerId && data.managerId === id) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors: { managerId: ["managerId cannot equal the employee id"] },
-    });
-  }
-
-  if (!(await assertManagerExists(data.managerId, res))) {
+  if (
+    !(await assertValidSupervisor(
+      {
+        employeeId: id,
+        supervisorId: data.supervisorId,
+        currentSupervisorId: existing.supervisorId,
+      },
+      res,
+    ))
+  ) {
     return;
   }
 
@@ -286,7 +293,17 @@ export const updateEmployee = async (req: Request, res: Response) => {
       select: { id: true },
     });
     if (conflict) {
-      return res.status(409).json({ message: "employeeCode already exists" });
+      return duplicateEmployeeId(res);
+    }
+  }
+
+  if (data.email !== existing.email) {
+    const conflict = await prisma.employee.findUnique({
+      where: { email: data.email },
+      select: { id: true },
+    });
+    if (conflict) {
+      return duplicateEmail(res);
     }
   }
 
@@ -297,6 +314,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
         employeeCode: data.employeeCode,
         firstName: data.firstName,
         lastName: data.lastName,
+        email: data.email,
         role: data.role,
         department: data.department,
         weeklyHours: data.weeklyHours,
@@ -305,18 +323,18 @@ export const updateEmployee = async (req: Request, res: Response) => {
         endDate: data.endDate ? parseDateOnly(data.endDate) : null,
         status: data.status,
         updatedBy: req.user.id,
-        managerId: data.managerId ?? null,
+        supervisorId: data.supervisorId,
       },
-      include: employeeUserInclude,
+      include: employeeListInclude,
     });
 
     return res.status(200).json(toEmployeeResponse(employee));
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return res.status(409).json({ message: "employeeCode already exists" });
+    if (isPrismaUniqueConstraintError(error)) {
+      if (uniqueConstraintIncludes(error, "email")) {
+        return duplicateEmail(res);
+      }
+      return duplicateEmployeeId(res);
     }
     throw error;
   }
@@ -331,22 +349,21 @@ export const deleteEmployee = async (req: Request, res: Response) => {
 
   const existing = await prisma.employee.findUnique({
     where: { id },
-    include: employeeUserInclude,
+    include: employeeListInclude,
   });
 
   if (!existing) {
     return res.status(404).json({ message: "Employee not found" });
   }
 
-  // Soft-delete only (existing strategy). Linked User remains; hard-delete
-  // would SetNull employeeId via FK.
+  // Soft-delete only. Historical assignments and time entries are kept.
   const employee = await prisma.employee.update({
     where: { id },
     data: {
       status: "INACTIVE",
       updatedBy: req.user.id,
     },
-    include: employeeUserInclude,
+    include: employeeListInclude,
   });
 
   return res.status(200).json({

@@ -9,7 +9,7 @@ type DashboardFiltersProps = {
   employees: EmployeeResponse[];
   projects: ProjectResponse[];
   departments: string[];
-  managers: { id: string; name: string }[];
+  supervisors: { id: string; name: string }[];
   compact?: boolean;
 };
 
@@ -22,7 +22,7 @@ export function DashboardFilters({
   employees,
   projects,
   departments,
-  managers,
+  supervisors,
   compact = false,
 }: DashboardFiltersProps) {
   return (
@@ -83,16 +83,16 @@ export function DashboardFilters({
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1.5 block font-medium text-foreground">Manager</span>
+              <span className="mb-1.5 block font-medium text-foreground">Supervisor</span>
               <select
                 className={selectClassName}
-                value={filters.managerId}
-                onChange={(event) => onChange({ managerId: event.target.value })}
+                value={filters.supervisorId}
+                onChange={(event) => onChange({ supervisorId: event.target.value })}
               >
-                <option value="">All Managers</option>
-                {managers.map((manager) => (
-                  <option key={manager.id} value={manager.id}>
-                    {manager.name}
+                <option value="">All Supervisors</option>
+                {supervisors.map((supervisor) => (
+                  <option key={supervisor.id} value={supervisor.id}>
+                    {supervisor.name}
                   </option>
                 ))}
               </select>

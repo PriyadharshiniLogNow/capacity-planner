@@ -6,6 +6,7 @@ import {
   buildWeekCapacitySummary,
   weekEndFromStart,
 } from "./capacityPlan.controller";
+import { employeeCountsTowardDefaultCapacityPool } from "../lib/capacityPolicy";
 import { prisma } from "../lib/prisma";
 import {
   capacitySummaryQuerySchema,
@@ -250,10 +251,12 @@ export const listCapacitySummaries = async (req: Request, res: Response) => {
   } else {
     const employees = await prisma.employee.findMany({
       where: { status: "ACTIVE" },
-      select: { id: true },
+      select: { id: true, status: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     });
-    employeeIds = employees.map((e) => e.id);
+    employeeIds = employees
+      .filter((e) => employeeCountsTowardDefaultCapacityPool(e.status))
+      .map((e) => e.id);
   }
 
   const summaries: EmployeeCapacitySummary[] = [];
