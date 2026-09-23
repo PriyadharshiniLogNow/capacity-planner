@@ -7,7 +7,7 @@ export default function TimeEntriesPage() {
   return (
     <ModulePlaceholder
       title="Time Entries"
-      description="Time entry capture will be available in a later module. Actual hours already flow into dashboard KPIs."
+      description="Time entries will be available in a later module. Actual hours already flow into dashboard KPIs."
     />
   );
 }

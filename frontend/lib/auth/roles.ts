@@ -10,7 +10,7 @@ export function getRoleLabel(role: Role): string {
     case "ADMIN":
       return "Administrator / Planner";
     case "SUPERVISOR":
-      return "Management";
+      return "Supervisor";
     case "EMPLOYEE":
       return "Employee";
   }
@@ -28,33 +28,42 @@ export function isEmployeeRole(role: Role): boolean {
   return role === "EMPLOYEE";
 }
 
+const ADMIN_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/employees", label: "Employees" },
+  { href: "/projects", label: "Projects" },
+  { href: "/planning", label: "Planning" },
+  { href: "/time-entries", label: "Time Entries" },
+  { href: "/absences", label: "Absences" },
+];
+
+const SUPERVISOR_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/employees", label: "Employees" },
+  { href: "/projects", label: "Projects" },
+  { href: "/planning", label: "Planning" },
+  { href: "/time-entries", label: "Time Entries" },
+  { href: "/absences", label: "Absences" },
+];
+
+const EMPLOYEE_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/profile", label: "Profile" },
+  { href: "/projects", label: "Projects" },
+  { href: "/planning", label: "Planning" },
+  { href: "/time-entries", label: "Time Entries" },
+  { href: "/absences", label: "Absences" },
+];
+
 export function getNavItems(role: Role): NavItem[] {
-  if (role === "ADMIN") {
-    return [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/planning", label: "Planning" },
-      { href: "/employees", label: "Employees" },
-      { href: "/projects", label: "Projects" },
-      { href: "/time-entries", label: "Time Entries" },
-      { href: "/absences", label: "Absences" },
-    ];
+  switch (role) {
+    case "ADMIN":
+      return ADMIN_NAV;
+    case "SUPERVISOR":
+      return SUPERVISOR_NAV;
+    case "EMPLOYEE":
+      return EMPLOYEE_NAV;
   }
-
-  if (role === "EMPLOYEE") {
-    return [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/planning", label: "My Planning" },
-      { href: "/time-entries", label: "My Time Entries" },
-      { href: "/absences", label: "My Absences" },
-      { href: "/profile", label: "Profile" },
-    ];
-  }
-
-  return [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/employees", label: "Employees" },
-    { href: "/projects", label: "Projects" },
-  ];
 }
 
 export function canAccessPath(role: Role, pathname: string): boolean {

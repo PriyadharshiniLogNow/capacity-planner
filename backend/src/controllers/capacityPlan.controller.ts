@@ -17,6 +17,7 @@ import {
 } from "../schemas/capacityPlan.schema";
 import { assertEmployeeProjectEligible } from "../services/eligibility.service";
 import type {
+  CapacityPlanDailyHours,
   CapacityPlanResponse,
   WeekCapacitySummary,
 } from "../types/capacityPlan.types";
@@ -103,6 +104,36 @@ function dailyHoursForEmployee(employee: {
   return employee.weeklyHours / employee.workingDays.length;
 }
 
+function parseDailyHours(
+  value: Prisma.JsonValue | null | undefined,
+): CapacityPlanDailyHours | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const result: CapacityPlanDailyHours = {};
+  for (const weekday of ["1", "2", "3", "4", "5", "6", "7"] as const) {
+    const hours = (value as Record<string, unknown>)[weekday];
+    if (typeof hours === "number" && Number.isFinite(hours) && hours >= 0) {
+      result[weekday] = hours;
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+function sumDailyHours(dailyHours?: CapacityPlanDailyHours | null): number | null {
+  if (!dailyHours) {
+    return null;
+  }
+
+  const total = (["1", "2", "3", "4", "5", "6", "7"] as const).reduce(
+    (sum, weekday) => sum + (dailyHours[weekday] ?? 0),
+    0,
+  );
+  return Math.round(total * 10) / 10;
+}
+
 function actorRole(req: Request): Role | undefined {
   return req.user?.role;
 }
@@ -139,6 +170,7 @@ function toCapacityPlanResponse(
     projectId: plan.projectId,
     weekStart: formatDateOnly(plan.planDate),
     plannedHours: plan.plannedHours,
+    dailyHours: parseDailyHours(plan.dailyHours),
     createdAt: plan.createdAt.toISOString(),
     createdBy: plan.createdBy,
     updatedAt: plan.updatedAt.toISOString(),
@@ -434,12 +466,15 @@ export const createCapacityPlan = async (req: Request, res: Response) => {
 
   const weekStart = parseDateOnly(data.weekStart);
 
+  const plannedHours = sumDailyHours(data.dailyHours) ?? data.plannedHours;
+
   const validation = await validateCapacityPlanRules({
     employeeId: data.employeeId,
     projectId: data.projectId,
     weekStart,
-    plannedHours: data.plannedHours,
+    plannedHours,
     res,
+    rejectOverallocation: false,
   });
   if (!validation.ok) {
     return;
@@ -451,7 +486,8 @@ export const createCapacityPlan = async (req: Request, res: Response) => {
         employeeId: data.employeeId,
         projectId: data.projectId,
         planDate: weekStart,
-        plannedHours: data.plannedHours,
+        plannedHours,
+        dailyHours: data.dailyHours ?? Prisma.JsonNull,
         createdBy: req.user.id,
         updatedBy: req.user.id,
       },
@@ -658,7 +694,10 @@ export const updateCapacityPlan = async (req: Request, res: Response) => {
   const weekStart = data.weekStart
     ? parseDateOnly(data.weekStart)
     : existing.planDate;
-  const plannedHours = data.plannedHours ?? existing.plannedHours;
+  const plannedHours =
+    sumDailyHours(data.dailyHours) ??
+    data.plannedHours ??
+    existing.plannedHours;
 
   const validation = await validateCapacityPlanRules({
     employeeId: existing.employeeId,
@@ -667,6 +706,7 @@ export const updateCapacityPlan = async (req: Request, res: Response) => {
     plannedHours,
     excludePlanId: existing.id,
     res,
+    rejectOverallocation: false,
   });
   if (!validation.ok) {
     return;
@@ -679,6 +719,9 @@ export const updateCapacityPlan = async (req: Request, res: Response) => {
         projectId,
         planDate: weekStart,
         plannedHours,
+        ...(data.dailyHours !== undefined
+          ? { dailyHours: data.dailyHours ?? Prisma.JsonNull }
+          : {}),
         updatedBy: req.user.id,
       },
       include: {
@@ -840,6 +883,7 @@ export const copyWeek = async (req: Request, res: Response) => {
         projectId: source.projectId,
         planDate: targetWeekStart,
         plannedHours: source.plannedHours,
+        dailyHours: source.dailyHours ?? Prisma.JsonNull,
         createdBy: req.user.id,
         updatedBy: req.user.id,
       },

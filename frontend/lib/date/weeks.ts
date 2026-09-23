@@ -68,6 +68,44 @@ export function formatWeekLabel(weekStart: string, index: number): string {
   return `W${index + 1} · ${formatShortDate(weekStart)}`;
 }
 
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+export function isoWeekday(value: string): number {
+  const jsDay = parseDateOnly(value).getUTCDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+
+export function weekDates(weekStart: string): string[] {
+  return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+}
+
+export function formatWeekRange(weekStart: string): string {
+  const start = parseDateOnly(weekStart);
+  const end = parseDateOnly(addDays(weekStart, 6));
+  const startLabel = `${pad(start.getUTCDate())} ${SHORT_MONTHS[start.getUTCMonth()]}`;
+  const endLabel = `${pad(end.getUTCDate())} ${SHORT_MONTHS[end.getUTCMonth()]} ${end.getUTCFullYear()}`;
+  return `${startLabel} - ${endLabel}`;
+}
+
+export function formatWeekChipRange(weekStart: string): string {
+  const start = parseDateOnly(weekStart);
+  const end = parseDateOnly(addDays(weekStart, 6));
+  return `${pad(start.getUTCDate())} ${SHORT_MONTHS[start.getUTCMonth()]} - ${pad(end.getUTCDate())} ${SHORT_MONTHS[end.getUTCMonth()]}`;
+}
+
 export function isCurrentOrPastWeek(weekStart: string): boolean {
   return weekStart <= getCurrentMonday();
 }

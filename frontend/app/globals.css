@@ -6,15 +6,19 @@
 @source "../hooks/**/*.{js,ts,jsx,tsx,mdx}";
 
 :root {
-  --background: #f5f3fb;
-  --foreground: #1b1740;
+  --background: #f5f7fa;
+  --foreground: #001a33;
   --surface: #ffffff;
-  --border: #e4dff3;
-  --muted: #6b6580;
-  --accent: #6c4ce8;
-  --accent-hover: #5b3dd1;
-  --accent-soft: #f0ecff;
+  --border: #d8dee6;
+  --muted: #6b7280;
+  --accent: #007bff;
+  --accent-hover: #0066d6;
+  --accent-soft: #e8f2ff;
   --accent-foreground: #ffffff;
+  --sidebar: #001a33;
+  --sidebar-text: #c5ced8;
+  --sidebar-hover: #0a2a4d;
+  --sidebar-active: #007bff;
   --util-under: #3b82f6;
   --util-partial: #ca8a04;
   --util-well: #16a34a;
@@ -32,6 +36,10 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
   --color-accent-foreground: var(--accent-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
   --color-utilization-under: var(--util-under);
   --color-utilization-partial: var(--util-partial);
   --color-utilization-well: var(--util-well);
