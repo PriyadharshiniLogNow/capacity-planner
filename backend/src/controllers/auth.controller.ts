@@ -2,7 +2,8 @@ import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { prisma } from "../lib/prisma";
 import { loginSchema, registerSchema } from "../schemas/auth.schema";
-import type { AuthUser, LoginResponse, RegisterResponse } from "../types/auth.type";
+import type { LoginResponse, RegisterResponse } from "../types/auth.type";
+import { toAuthUser } from "../lib/authUser";
 import { jwtUtils } from "../utils/jwt";
 import { comparePassword, hashPassword } from "../utils/password";
 
@@ -11,20 +12,6 @@ function validationError(res: Response, error: ZodError) {
     message: "Validation failed",
     errors: error.flatten(),
   });
-}
-
-function toAuthUser(user: {
-  id: string;
-  email: string;
-  role: AuthUser["role"];
-  employeeId: string | null;
-}): AuthUser {
-  return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    employeeId: user.employeeId,
-  };
 }
 
 export const register = async (req: Request, res: Response) => {

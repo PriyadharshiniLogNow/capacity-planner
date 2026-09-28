@@ -1,44 +1,82 @@
 import { z } from "zod";
 
+export const INTERNAL_CUSTOMER_NAME = "Log Now";
+
 const dateString = z
   .string()
-  .min(1, "Date is required")
-  .refine((value) => !Number.isNaN(Date.parse(value)), {
-    message: "Invalid date",
-  })
-  .transform((value) => new Date(value));
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+  .refine((value) => {
+    const [y, m, d] = value.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return (
+      dt.getUTCFullYear() === y &&
+      dt.getUTCMonth() === m - 1 &&
+      dt.getUTCDate() === d
+    );
+  }, "Invalid calendar date");
 
-export const projectBodySchema = z
-  .object({
-    projectCode: z.string().trim().min(1, "projectCode is required"),
-    name: z.string().trim().min(1, "name is required"),
-    type: z.enum(["CUSTOMER", "INTERNAL"]),
-    customerName: z.string().trim().min(1).nullable().optional(),
-    projectManagerId: z.string().trim().min(1).nullable().optional(),
-    startDate: dateString,
-    endDate: dateString,
-    billable: z.boolean(),
-    status: z.enum(["OPEN", "CLOSED"]),
-  })
-  .superRefine((data, ctx) => {
-    if (data.type === "CUSTOMER") {
-      if (!data.customerName || data.customerName.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["customerName"],
-          message: "customerName is required when type is CUSTOMER",
-        });
-      }
-    }
+const projectFieldsSchema = z.object({
+  name: z.string().trim().min(1, "Project name is required"),
+  type: z.enum(["CUSTOMER", "INTERNAL"]),
+  customerName: z.string().trim().min(1, "Customer is required"),
+  projectManagerId: z.string().trim().min(1, "Project manager is required"),
+  startDate: dateString,
+  endDate: dateString,
+  billable: z.boolean(),
+  status: z.enum(["OPEN", "CLOSED"]),
+});
 
-    if (data.endDate < data.startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["endDate"],
-        message: "endDate must be greater than or equal to startDate",
-      });
-    }
-  });
+function validateProjectDateRange(
+  data: { startDate: string; endDate: string },
+  ctx: z.RefinementCtx,
+) {
+  if (data.endDate < data.startDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["endDate"],
+      message: "Project end date cannot be earlier than the start date.",
+    });
+  }
+}
+
+function validateProjectCustomerName(
+  data: { type: "CUSTOMER" | "INTERNAL"; customerName: string },
+  ctx: z.RefinementCtx,
+) {
+  if (
+    data.type === "INTERNAL" &&
+    data.customerName !== INTERNAL_CUSTOMER_NAME
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["customerName"],
+      message: `Internal projects must use customer "${INTERNAL_CUSTOMER_NAME}".`,
+    });
+  }
+}
+
+function validateProjectFields(
+  data: {
+    type: "CUSTOMER" | "INTERNAL";
+    customerName: string;
+    startDate: string;
+    endDate: string;
+  },
+  ctx: z.RefinementCtx,
+) {
+  validateProjectDateRange(data, ctx);
+  validateProjectCustomerName(data, ctx);
+}
+
+/** Create: project ID is assigned by the server (e.g. PROJ-001). */
+export const createProjectBodySchema =
+  projectFieldsSchema.superRefine(validateProjectFields);
+
+export const projectBodySchema = projectFieldsSchema
+  .extend({
+    projectCode: z.string().trim().min(1, "Project ID is required"),
+  })
+  .superRefine(validateProjectFields);
 
 export const listProjectsQuerySchema = z.object({
   status: z.enum(["OPEN", "CLOSED"]).optional(),

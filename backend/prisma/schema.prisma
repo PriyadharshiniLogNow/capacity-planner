@@ -50,34 +50,35 @@ enum ProjectType {
 }
 
 model Employee {
-  id           String         @id @default(cuid())
-  employeeCode String         @unique
-  firstName    String
-  lastName     String
-  role         String
-  department   String
-  managerId    String?
-  manager      Employee?      @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
-  directReports Employee[]    @relation("EmployeeManager")
-  weeklyHours  Float
+  id            String         @id @default(cuid())
+  employeeCode  String         @unique
+  firstName     String
+  lastName      String
+  email         String         @unique
+  role          String
+  department    String
+  supervisorId  String?
+  supervisor    Employee?      @relation("EmployeeSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  directReports Employee[]     @relation("EmployeeSupervisor")
+  weeklyHours   Float
   /// ISO weekday numbers 1=Mon .. 7=Sun, e.g. [1,2,3,4,5]
-  workingDays  Int[]
-  startDate    DateTime       @db.Date
-  endDate      DateTime?      @db.Date
-  status       EmployeeStatus @default(ACTIVE)
-  createdAt    DateTime       @default(now())
-  createdBy    String
-  updatedAt    DateTime       @updatedAt
-  updatedBy    String
+  workingDays   Int[]
+  startDate     DateTime       @db.Date
+  endDate       DateTime?      @db.Date
+  status        EmployeeStatus @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  createdBy     String
+  updatedAt     DateTime       @updatedAt
+  updatedBy     String
 
   managedProjects Project[]     @relation("ProjectManager")
-  capacityPlans  CapacityPlan[]
-  timeEntries    TimeEntry[]
-  absences       Absence[]
-  user           User?
+  capacityPlans   CapacityPlan[]
+  timeEntries     TimeEntry[]
+  absences        Absence[]
+  user            User?
 
   @@index([department])
-  @@index([managerId])
+  @@index([supervisorId])
   @@index([status])
   @@map("employees")
 }
@@ -87,7 +88,7 @@ model Project {
   projectCode      String        @unique
   name             String
   type             ProjectType
-  customerName     String?
+  customerName     String
   projectManagerId String?
   projectManager   Employee?     @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: SetNull)
   startDate        DateTime      @db.Date

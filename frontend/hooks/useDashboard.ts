@@ -106,9 +106,9 @@ function applyFilters(
       if (filters.department && summary.department !== filters.department) {
         return false;
       }
-      if (filters.managerId) {
+      if (filters.supervisorId) {
         const employee = employeesById.get(summary.employeeId);
-        if (!employee || employee.managerId !== filters.managerId) {
+        if (!employee || employee.supervisorId !== filters.supervisorId) {
           return false;
         }
       }
@@ -206,7 +206,7 @@ export function useDashboard() {
   const [filters, setFilters] = useState<DashboardFilterState>({
     periodStart: getCurrentMonday(),
     department: "",
-    managerId: "",
+    supervisorId: "",
     employeeId: "",
     projectId: "",
     projectType: "",
@@ -347,7 +347,7 @@ export function useDashboard() {
   );
 
   const usesClientOnlyFilters = Boolean(
-    filters.department || filters.managerId || filters.projectType,
+    filters.department || filters.supervisorId || filters.projectType,
   );
 
   const kpis = useMemo<DashboardKpis>(() => {
@@ -532,15 +532,15 @@ export function useDashboard() {
     [employees],
   );
 
-  const managers = useMemo(() => {
-    const managerIds = new Set(
+  const supervisors = useMemo(() => {
+    const supervisorIds = new Set(
       employees
-        .map((employee) => employee.managerId)
+        .map((employee) => employee.supervisorId)
         .filter((id): id is string => Boolean(id)),
     );
 
     return employees
-      .filter((employee) => managerIds.has(employee.id))
+      .filter((employee) => supervisorIds.has(employee.id))
       .map((employee) => ({
         id: employee.id,
         name: employeeDisplayName(employee),
@@ -567,7 +567,7 @@ export function useDashboard() {
     employees,
     projects,
     departments,
-    managers,
+    supervisors,
     loading: missingEmployeeLink ? false : loading,
     error: missingEmployeeLink
       ? "Your account is not linked to an employee profile."

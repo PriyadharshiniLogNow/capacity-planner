@@ -3,6 +3,8 @@ import type {
   ProjectListQuery,
   ProjectListResponse,
   ProjectResponse,
+  ProjectCreatePayload,
+  ProjectWritePayload,
 } from "@/types/project.types";
 
 export function listProjects(query: ProjectListQuery = {}) {
@@ -16,6 +18,31 @@ export function listProjects(query: ProjectListQuery = {}) {
       page: query.page,
       limit: query.limit,
     })}`,
+  );
+}
+
+export function getProjectById(id: string) {
+  return apiRequest<ProjectResponse>(`/api/projects/${id}`);
+}
+
+export function createProject(payload: ProjectCreatePayload) {
+  return apiRequest<ProjectResponse>("/api/projects", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateProject(id: string, payload: ProjectWritePayload) {
+  return apiRequest<ProjectResponse>(`/api/projects/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function closeProject(id: string) {
+  return apiRequest<{ message: string; project: ProjectResponse }>(
+    `/api/projects/${id}`,
+    { method: "DELETE" },
   );
 }
 

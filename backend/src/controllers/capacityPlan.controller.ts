@@ -15,6 +15,7 @@ import {
   listCapacityPlansQuerySchema,
   updateCapacityPlanSchema,
 } from "../schemas/capacityPlan.schema";
+import { assertEmployeeProjectEligible } from "../services/eligibility.service";
 import type {
   CapacityPlanDailyHours,
   CapacityPlanResponse,
@@ -209,18 +210,11 @@ function dateInRange(date: Date, start: Date, end: Date): boolean {
   return t >= start.getTime() && t <= end.getTime();
 }
 
-function rangesOverlap(
-  aStart: Date,
-  aEnd: Date,
-  bStart: Date,
-  bEnd: Date,
-): boolean {
-  return aStart.getTime() <= bEnd.getTime() && bStart.getTime() <= aEnd.getTime();
-}
-
 /**
  * Weekly contract capacity for the planning week (working days only,
  * clipped to employment period). Non-working days contribute 0.
+ * Employee status is applied by the default capacity pool (active only);
+ * historical weeks still use contract hours, working days, and dates.
  */
 function computeWeeklyCapacity(
   employee: {
@@ -228,6 +222,7 @@ function computeWeeklyCapacity(
     workingDays: number[];
     startDate: Date;
     endDate: Date | null;
+    status?: Employee["status"];
   },
   weekStart: Date,
 ): number {
@@ -397,86 +392,26 @@ async function validateCapacityPlanRules(params: {
 
   const weekEnd = weekEndFromStart(weekStart);
 
-  const [employee, project] = await Promise.all([
-    prisma.employee.findUnique({ where: { id: employeeId } }),
-    prisma.project.findUnique({ where: { id: projectId } }),
-  ]);
+  const eligibility = await assertEmployeeProjectEligible({
+    employeeId,
+    projectId,
+    purpose: "planning",
+    rangeStart: weekStart,
+    rangeEnd: weekEnd,
+  });
 
-  if (!employee) {
-    res.status(404).json({
-      error: {
-        code: "EMPLOYEE_NOT_FOUND",
-        message: "Employee not found",
-      },
-    });
+  if (!eligibility.ok) {
+    res.status(eligibility.status).json(eligibility.body);
     return { ok: false };
   }
 
-  if (!project) {
-    res.status(404).json({
-      error: {
-        code: "PROJECT_NOT_FOUND",
-        message: "Project not found",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (employee.status !== "ACTIVE") {
-    res.status(422).json({
-      error: {
-        code: "EMPLOYEE_OUTSIDE_PLANNING_PERIOD",
-        message: "Employee must be ACTIVE for capacity planning",
-      },
-    });
-    return { ok: false };
-  }
+  const { employee, project } = eligibility;
 
   if (employee.workingDays.length === 0 || employee.weeklyHours <= 0) {
     res.status(422).json({
       error: {
         code: "INVALID_PLANNED_HOURS",
         message: "Employee has no weekly working capacity configured",
-      },
-    });
-    return { ok: false };
-  }
-
-  const employmentEnd = employee.endDate ?? weekEnd;
-  if (
-    !rangesOverlap(
-      weekStart,
-      weekEnd,
-      employee.startDate,
-      employmentEnd,
-    )
-  ) {
-    res.status(422).json({
-      error: {
-        code: "EMPLOYEE_OUTSIDE_PLANNING_PERIOD",
-        message: "Planning week is outside the employee's employment period",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (project.status !== "OPEN") {
-    res.status(422).json({
-      error: {
-        code: "PROJECT_OUTSIDE_PLANNING_PERIOD",
-        message: "Capacity plans can only be created for OPEN projects",
-      },
-    });
-    return { ok: false };
-  }
-
-  if (
-    !rangesOverlap(weekStart, weekEnd, project.startDate, project.endDate)
-  ) {
-    res.status(422).json({
-      error: {
-        code: "PROJECT_OUTSIDE_PLANNING_PERIOD",
-        message: "Planning week is outside the project date range",
       },
     });
     return { ok: false };
@@ -915,36 +850,29 @@ export const copyWeek = async (req: Request, res: Response) => {
       continue;
     }
 
-    // Soft-validate without writing an HTTP error for each skip path.
-    const employee = await prisma.employee.findUnique({
-      where: { id: source.employeeId },
-    });
-    const project = await prisma.project.findUnique({
-      where: { id: source.projectId },
+    const weekEnd = weekEndFromStart(targetWeekStart);
+    const eligibility = await assertEmployeeProjectEligible({
+      employeeId: source.employeeId,
+      projectId: source.projectId,
+      purpose: "planning",
+      rangeStart: targetWeekStart,
+      rangeEnd: weekEnd,
     });
 
-    if (!employee || !project || employee.status !== "ACTIVE") {
+    if (!eligibility.ok) {
       skipped += 1;
       continue;
     }
 
-    const weekEnd = weekEndFromStart(targetWeekStart);
-    const employmentEnd = employee.endDate ?? weekEnd;
-    if (
-      !rangesOverlap(
-        targetWeekStart,
-        weekEnd,
-        employee.startDate,
-        employmentEnd,
-      ) ||
-      !rangesOverlap(
-        targetWeekStart,
-        weekEnd,
-        project.startDate,
-        project.endDate,
-      ) ||
-      project.status !== "OPEN"
-    ) {
+    const { employee } = eligibility;
+
+    const capacityPreview = await buildWeekCapacitySummary({
+      employee,
+      weekStart: targetWeekStart,
+      extraPlannedHours: source.plannedHours,
+    });
+
+    if (capacityPreview.overallocationHours > 0) {
       skipped += 1;
       continue;
     }

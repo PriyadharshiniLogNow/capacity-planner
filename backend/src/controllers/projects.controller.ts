@@ -1,17 +1,33 @@
-import {
-  Prisma,
-  type Project,
-  type ProjectStatus,
-  type ProjectType,
-} from "@prisma/client";
+import { Prisma, type Project } from "@prisma/client";
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
-import { prisma } from "../lib/prisma";
 import {
+  isPrismaUniqueConstraintError,
+  projectIdConflictBody,
+} from "../lib/uniqueConstraint";
+import { prisma } from "../lib/prisma";
+import { generateNextProjectCode } from "../lib/projectCode";
+import {
+  isSupervisorUserRole,
+  SUPERVISOR_MESSAGES,
+} from "../lib/supervisorPolicy";
+import {
+  createProjectBodySchema,
   listProjectsQuerySchema,
   projectBodySchema,
 } from "../schemas/project.schema";
-import type { ProjectBody } from "../types/project.type";
+import { formatDateOnly, parseDateOnly } from "../utils/date";
+
+type ProjectManagerSummary = {
+  id: string;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+};
+
+type ProjectWithManager = Project & {
+  projectManager?: ProjectManagerSummary | null;
+};
 
 function validationError(res: Response, error: ZodError) {
   return res.status(422).json({
@@ -24,7 +40,7 @@ function paramId(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function toProjectResponse(project: Project) {
+function toProjectResponse(project: ProjectWithManager) {
   return {
     id: project.id,
     projectCode: project.projectCode,
@@ -32,35 +48,46 @@ function toProjectResponse(project: Project) {
     type: project.type,
     customerName: project.customerName,
     projectManagerId: project.projectManagerId,
-    startDate: project.startDate,
-    endDate: project.endDate,
+    projectManager: project.projectManager
+      ? {
+          id: project.projectManager.id,
+          employeeCode: project.projectManager.employeeCode,
+          firstName: project.projectManager.firstName,
+          lastName: project.projectManager.lastName,
+        }
+      : null,
+    startDate: formatDateOnly(project.startDate),
+    endDate: formatDateOnly(project.endDate),
     billable: project.billable,
     status: project.status,
-    createdAt: project.createdAt,
+    createdAt: project.createdAt.toISOString(),
     createdBy: project.createdBy,
-    updatedAt: project.updatedAt,
+    updatedAt: project.updatedAt.toISOString(),
     updatedBy: project.updatedBy,
   };
 }
 
-function normalizeCustomerName(data: ProjectBody): string | null {
-  if (data.type === "INTERNAL") {
-    return data.customerName ?? null;
-  }
-  return data.customerName as string;
-}
+const projectInclude = {
+  projectManager: {
+    select: {
+      id: true,
+      employeeCode: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+} as const;
 
 async function assertProjectManagerExists(
-  projectManagerId: string | null | undefined,
+  projectManagerId: string,
   res: Response,
 ): Promise<boolean> {
-  if (!projectManagerId) {
-    return true;
-  }
-
   const employee = await prisma.employee.findUnique({
     where: { id: projectManagerId },
-    select: { id: true },
+    select: {
+      id: true,
+      user: { select: { role: true } },
+    },
   });
 
   if (!employee) {
@@ -68,7 +95,24 @@ async function assertProjectManagerExists(
     return false;
   }
 
+  if (!isSupervisorUserRole(employee.user?.role)) {
+    res.status(422).json({
+      message: "Validation failed",
+      errors: {
+        formErrors: [] as string[],
+        fieldErrors: {
+          projectManagerId: [SUPERVISOR_MESSAGES.notSupervisorUser],
+        },
+      },
+    });
+    return false;
+  }
+
   return true;
+}
+
+function duplicateProjectId(res: Response) {
+  return res.status(409).json(projectIdConflictBody());
 }
 
 export const createProject = async (req: Request, res: Response) => {
@@ -76,7 +120,7 @@ export const createProject = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const parsed = projectBodySchema.safeParse(req.body);
+  const parsed = createProjectBodySchema.safeParse(req.body);
   if (!parsed.success) {
     return validationError(res, parsed.error);
   }
@@ -88,29 +132,28 @@ export const createProject = async (req: Request, res: Response) => {
   }
 
   try {
+    const projectCode = await generateNextProjectCode();
     const project = await prisma.project.create({
       data: {
-        projectCode: data.projectCode,
+        projectCode,
         name: data.name,
         type: data.type,
-        customerName: normalizeCustomerName(data),
-        projectManagerId: data.projectManagerId ?? null,
-        startDate: data.startDate,
-        endDate: data.endDate,
+        customerName: data.customerName,
+        projectManagerId: data.projectManagerId,
+        startDate: parseDateOnly(data.startDate),
+        endDate: parseDateOnly(data.endDate),
         billable: data.billable,
         status: data.status,
         createdBy: req.user.id,
         updatedBy: req.user.id,
       },
+      include: projectInclude,
     });
 
     return res.status(201).json(toProjectResponse(project));
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return res.status(409).json({ message: "projectCode already exists" });
+    if (isPrismaUniqueConstraintError(error)) {
+      return duplicateProjectId(res);
     }
     throw error;
   }
@@ -126,10 +169,10 @@ export const listProjects = async (req: Request, res: Response) => {
   const where: Prisma.ProjectWhereInput = {};
 
   if (status) {
-    where.status = status as ProjectStatus;
+    where.status = status;
   }
   if (type) {
-    where.type = type as ProjectType;
+    where.type = type;
   }
   if (billable !== undefined) {
     where.billable = billable;
@@ -151,6 +194,7 @@ export const listProjects = async (req: Request, res: Response) => {
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
+      include: projectInclude,
     }),
   ]);
 
@@ -170,6 +214,7 @@ export const getProjectById = async (req: Request, res: Response) => {
 
   const project = await prisma.project.findUnique({
     where: { id },
+    include: projectInclude,
   });
 
   if (!project) {
@@ -211,7 +256,7 @@ export const updateProject = async (req: Request, res: Response) => {
       select: { id: true },
     });
     if (conflict) {
-      return res.status(409).json({ message: "projectCode already exists" });
+      return duplicateProjectId(res);
     }
   }
 
@@ -222,23 +267,21 @@ export const updateProject = async (req: Request, res: Response) => {
         projectCode: data.projectCode,
         name: data.name,
         type: data.type,
-        customerName: normalizeCustomerName(data),
-        projectManagerId: data.projectManagerId ?? null,
-        startDate: data.startDate,
-        endDate: data.endDate,
+        customerName: data.customerName,
+        projectManagerId: data.projectManagerId,
+        startDate: parseDateOnly(data.startDate),
+        endDate: parseDateOnly(data.endDate),
         billable: data.billable,
         status: data.status,
         updatedBy: req.user.id,
       },
+      include: projectInclude,
     });
 
     return res.status(200).json(toProjectResponse(project));
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return res.status(409).json({ message: "projectCode already exists" });
+    if (isPrismaUniqueConstraintError(error)) {
+      return duplicateProjectId(res);
     }
     throw error;
   }
@@ -253,18 +296,21 @@ export const deleteProject = async (req: Request, res: Response) => {
 
   const existing = await prisma.project.findUnique({
     where: { id },
+    include: projectInclude,
   });
 
   if (!existing) {
     return res.status(404).json({ message: "Project not found" });
   }
 
+  // Soft-close only. Historical assignments and time entries are kept.
   const project = await prisma.project.update({
     where: { id },
     data: {
       status: "CLOSED",
       updatedBy: req.user.id,
     },
+    include: projectInclude,
   });
 
   return res.status(200).json({

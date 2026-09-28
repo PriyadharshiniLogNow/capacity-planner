@@ -8,20 +8,28 @@ import type {
 export type ProjectBody = z.infer<typeof projectBodySchema>;
 export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
 
+export type ProjectManagerSummary = {
+  id: string;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+};
+
 export type ProjectResponse = {
   id: string;
   projectCode: string;
   name: string;
   type: ProjectType;
-  customerName: string | null;
+  customerName: string;
   projectManagerId: string | null;
-  startDate: Date;
-  endDate: Date;
+  projectManager: ProjectManagerSummary | null;
+  startDate: string;
+  endDate: string;
   billable: boolean;
   status: ProjectStatus;
-  createdAt: Date;
+  createdAt: string;
   createdBy: string;
-  updatedAt: Date;
+  updatedAt: string;
   updatedBy: string;
 };
 

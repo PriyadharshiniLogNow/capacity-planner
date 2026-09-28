@@ -1,14 +1,22 @@
 export type EmployeeStatus = "ACTIVE" | "INACTIVE";
 
+export type EmployeeSupervisorSummary = {
+  id: string;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+};
+
 export type EmployeeResponse = {
   id: string;
   employeeCode: string;
   firstName: string;
   lastName: string;
-  email: string | null;
+  email: string;
   role: string;
   department: string;
-  managerId: string | null;
+  supervisorId: string | null;
+  supervisor: EmployeeSupervisorSummary | null;
   weeklyHours: number;
   workingDays: number[];
   startDate: string;
@@ -20,10 +28,29 @@ export type EmployeeResponse = {
   updatedBy: string;
 };
 
+export type EmployeeWritePayload = {
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  department: string;
+  supervisorId: string | null;
+  weeklyHours: number;
+  workingDays: number[];
+  startDate: string;
+  endDate: string | null;
+  status: EmployeeStatus;
+};
+
+/** Server assigns employeeCode (e.g. EMP-001) on create. */
+export type CreateEmployeePayload = Omit<EmployeeWritePayload, "employeeCode">;
+
 export type EmployeeListQuery = {
   status?: EmployeeStatus;
   department?: string;
   search?: string;
+  supervisorUsersOnly?: boolean;
   page?: number;
   limit?: number;
 };
