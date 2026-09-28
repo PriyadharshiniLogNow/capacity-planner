@@ -4,11 +4,18 @@ import {
   isInactiveSupervisorSelection,
   isSelfSupervision,
   isSupervisorRequired,
+  isSupervisorUserRole,
   SUPERVISOR_MESSAGES,
   supervisorIdFromLegacyManager,
 } from "../src/lib/supervisorPolicy";
 
 describe("supervisor policy", () => {
+  it("recognizes supervisor auth users only", () => {
+    expect(isSupervisorUserRole("SUPERVISOR")).toBe(true);
+    expect(isSupervisorUserRole("ADMIN")).toBe(false);
+    expect(isSupervisorUserRole("EMPLOYEE")).toBe(false);
+  });
+
   it("requires a supervisor when other active employees exist", () => {
     expect(isSupervisorRequired(1)).toBe(true);
     expect(isSupervisorRequired(0)).toBe(false);

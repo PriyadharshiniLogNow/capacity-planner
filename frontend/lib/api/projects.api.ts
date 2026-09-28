@@ -3,6 +3,7 @@ import type {
   ProjectListQuery,
   ProjectListResponse,
   ProjectResponse,
+  ProjectCreatePayload,
   ProjectWritePayload,
 } from "@/types/project.types";
 
@@ -24,7 +25,7 @@ export function getProjectById(id: string) {
   return apiRequest<ProjectResponse>(`/api/projects/${id}`);
 }
 
-export function createProject(payload: ProjectWritePayload) {
+export function createProject(payload: ProjectCreatePayload) {
   return apiRequest<ProjectResponse>("/api/projects", {
     method: "POST",
     body: JSON.stringify(payload),

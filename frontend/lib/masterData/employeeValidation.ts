@@ -45,6 +45,7 @@ export function workingDaysFromPreset(presetId: string, fallback: number[]): num
 export function validateEmployeeForm(
   values: EmployeeFormValues,
   options: {
+    mode?: "create" | "edit" | "view";
     requireSupervisor: boolean;
     employeeId?: string;
     currentSupervisorId?: string | null;
@@ -56,8 +57,9 @@ export function validateEmployeeForm(
   },
 ): EmployeeFieldErrors {
   const errors: EmployeeFieldErrors = {};
+  const mode = options.mode ?? "edit";
 
-  if (!values.employeeCode.trim()) {
+  if (mode !== "create" && !values.employeeCode.trim()) {
     errors.employeeCode = "Employee ID is required.";
   }
   if (!values.firstName.trim()) {

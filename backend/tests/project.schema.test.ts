@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createProjectBodySchema,
   INTERNAL_CUSTOMER_NAME,
   listProjectsQuerySchema,
   projectBodySchema,
@@ -16,6 +17,41 @@ const validProject = {
   billable: false,
   status: "OPEN" as const,
 };
+
+describe("createProjectBodySchema", () => {
+  it("accepts create payloads without a project ID", () => {
+    const { projectCode: _ignored, ...createPayload } = validProject;
+    const parsed = createProjectBodySchema.parse(createPayload);
+    expect(parsed.name).toBe("Capacity Rollout");
+    expect("projectCode" in parsed).toBe(false);
+  });
+
+  it("rejects create payloads missing required fields", () => {
+    const parsed = createProjectBodySchema.safeParse({});
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+    const fields = parsed.error.flatten().fieldErrors;
+    expect(fields.projectCode).toBeUndefined();
+    expect(fields.name?.length).toBeGreaterThan(0);
+  });
+
+  it("rejects internal projects with a customer other than Log Now", () => {
+    const { projectCode: _ignored, ...createPayload } = validProject;
+    const parsed = createProjectBodySchema.safeParse({
+      ...createPayload,
+      customerName: "Other Corp",
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+    expect(parsed.error.flatten().fieldErrors.customerName).toContain(
+      'Internal projects must use customer "Log Now".',
+    );
+  });
+});
 
 describe("projectBodySchema", () => {
   it("creates a project with valid data and trims Project ID", () => {
@@ -57,6 +93,16 @@ describe("projectBodySchema", () => {
     expect(parsed.error.flatten().fieldErrors.endDate).toContain(
       "Project end date cannot be earlier than the start date.",
     );
+  });
+
+  it("allows customer projects with any customer name", () => {
+    const parsed = projectBodySchema.parse({
+      ...validProject,
+      type: "CUSTOMER",
+      customerName: "Global Retail Inc.",
+      billable: true,
+    });
+    expect(parsed.customerName).toBe("Global Retail Inc.");
   });
 });
 

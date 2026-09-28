@@ -38,6 +38,9 @@ export type ProjectWritePayload = {
   status: ProjectStatus;
 };
 
+/** Server assigns projectCode (e.g. PROJ-001) on create. */
+export type ProjectCreatePayload = Omit<ProjectWritePayload, "projectCode">;
+
 export type ProjectListQuery = {
   status?: ProjectStatus;
   type?: ProjectType;

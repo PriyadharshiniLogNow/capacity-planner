@@ -29,10 +29,14 @@ export function emptyProjectForm(): ProjectFormValues {
   };
 }
 
-export function validateProjectForm(values: ProjectFormValues): ProjectFieldErrors {
+export function validateProjectForm(
+  values: ProjectFormValues,
+  options: { mode?: "create" | "edit" | "view" } = {},
+): ProjectFieldErrors {
   const errors: ProjectFieldErrors = {};
+  const mode = options.mode ?? "edit";
 
-  if (!values.projectCode.trim()) {
+  if (mode !== "create" && !values.projectCode.trim()) {
     errors.projectCode = "Project ID is required.";
   }
   if (!values.name.trim()) {

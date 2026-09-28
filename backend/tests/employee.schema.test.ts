@@ -22,9 +22,10 @@ const validEmployee = {
 };
 
 describe("createEmployeeSchema", () => {
-  it("creates an employee with valid data and trims Employee ID and names", () => {
-    const parsed = createEmployeeSchema.parse(validEmployee);
-    expect(parsed.employeeCode).toBe("EMP-100");
+  it("creates an employee with valid data and trims names", () => {
+    const { employeeCode: _ignored, ...createPayload } = validEmployee;
+    const parsed = createEmployeeSchema.parse(createPayload);
+    expect("employeeCode" in parsed).toBe(false);
     expect(parsed.firstName).toBe("Jamie");
     expect(parsed.lastName).toBe("Rivera");
     expect(parsed.email).toBe("jamie@capacity.local");
@@ -33,19 +34,23 @@ describe("createEmployeeSchema", () => {
   });
 
   it("accepts employee creation without a password and does not store one", () => {
+    const { employeeCode: _ignored, ...createPayload } = validEmployee;
     const parsed = createEmployeeSchema.parse({
-      ...validEmployee,
+      ...createPayload,
       password: "should-not-be-required",
     });
     expect(parsed).not.toHaveProperty("password");
     expect("password" in parsed).toBe(false);
   });
 
-  it("keeps Employee ID and email as separate fields", () => {
-    const parsed = createEmployeeSchema.parse(validEmployee);
-    expect(parsed.employeeCode).toBe("EMP-100");
-    expect(parsed.email).toBe("jamie@capacity.local");
-    expect(parsed.employeeCode).not.toBe(parsed.email);
+  it("does not accept employee ID on create", () => {
+    const parsed = createEmployeeSchema.safeParse(validEmployee);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+    expect("employeeCode" in parsed.data).toBe(false);
+    expect(parsed.data.email).toBe("jamie@capacity.local");
   });
 
   it("rejects an employee without required fields", () => {
@@ -55,7 +60,7 @@ describe("createEmployeeSchema", () => {
       return;
     }
     const fields = parsed.error.flatten().fieldErrors;
-    expect(fields.employeeCode?.length).toBeGreaterThan(0);
+    expect(fields.employeeCode).toBeUndefined();
     expect(fields.firstName?.length).toBeGreaterThan(0);
     expect(fields.lastName?.length).toBeGreaterThan(0);
     expect(fields.email?.length).toBeGreaterThan(0);
@@ -146,6 +151,11 @@ describe("listEmployeesQuerySchema", () => {
   it("does not default to active-only, so inactive employees remain listable", () => {
     const parsed = listEmployeesQuerySchema.parse({});
     expect(parsed.status).toBeUndefined();
+  });
+
+  it("accepts supervisorUsersOnly=true for supervisor-user picklists", () => {
+    const parsed = listEmployeesQuerySchema.parse({ supervisorUsersOnly: "true" });
+    expect(parsed.supervisorUsersOnly).toBe(true);
   });
 });
 

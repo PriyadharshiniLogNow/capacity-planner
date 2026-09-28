@@ -36,7 +36,7 @@ capacity-planner/
 │       ├── lib/
 │       └── index.ts
 ├── docker-compose.yml        # Local PostgreSQL
-├── package.json              # npm workspaces root
+├── package.json              # Root convenience scripts (no app dependencies)
 └── README.md
 ```
 
@@ -65,7 +65,14 @@ Capacity KPIs are always calculated from source data (plans, absences, holidays,
 ```bash
 git clone <repository-url>
 cd capacity-planner
-npm install
+npm run install:all
+```
+
+Dependencies install into `frontend/node_modules` and `backend/node_modules` only (not at the repo root). You can also install each app separately:
+
+```bash
+npm install --prefix frontend
+npm install --prefix backend
 ```
 
 ### 2. Configure environment
@@ -139,6 +146,7 @@ GET http://localhost:4000/health
 
 | Command | Description |
 | --- | --- |
+| `npm run install:all` | Install frontend and backend dependencies |
 | `npm run dev:web` | Start Next.js frontend |
 | `npm run dev:api` | Start Express API (watch mode) |
 | `npm run db:generate` | Generate Prisma Client |

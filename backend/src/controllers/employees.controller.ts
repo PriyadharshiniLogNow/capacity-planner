@@ -1,12 +1,14 @@
 import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
+import { generateNextEmployeeCode } from "../lib/employeeCode";
 import { toEmployeeResponse } from "../lib/employeeMapper";
 import {
   isDirectCircularSupervision,
   isInactiveSupervisorSelection,
   isSelfSupervision,
   isSupervisorRequired,
+  isSupervisorUserRole,
   SUPERVISOR_MESSAGES,
 } from "../lib/supervisorPolicy";
 import {
@@ -87,11 +89,21 @@ async function assertValidSupervisor(
 
   const supervisor = await prisma.employee.findUnique({
     where: { id: supervisorId },
-    select: { id: true, status: true, supervisorId: true },
+    select: {
+      id: true,
+      status: true,
+      supervisorId: true,
+      user: { select: { role: true } },
+    },
   });
 
   if (!supervisor) {
     res.status(404).json({ message: SUPERVISOR_MESSAGES.notFound });
+    return false;
+  }
+
+  if (!isSupervisorUserRole(supervisor.user?.role)) {
+    fieldError(res, "supervisorId", SUPERVISOR_MESSAGES.notSupervisorUser);
     return false;
   }
 
@@ -153,9 +165,10 @@ export const createEmployee = async (req: Request, res: Response) => {
   }
 
   try {
+    const employeeCode = await generateNextEmployeeCode();
     const created = await prisma.employee.create({
       data: {
-        employeeCode: data.employeeCode,
+        employeeCode,
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -196,9 +209,13 @@ export const listEmployees = async (req: Request, res: Response) => {
     return validationError(res, parsed.error);
   }
 
-  const { status, department, search, page, limit } = parsed.data;
+  const { status, department, search, supervisorUsersOnly, page, limit } =
+    parsed.data;
   const where: Prisma.EmployeeWhereInput = {};
 
+  if (supervisorUsersOnly) {
+    where.user = { is: { role: "SUPERVISOR" } };
+  }
   if (status) {
     where.status = status;
   }

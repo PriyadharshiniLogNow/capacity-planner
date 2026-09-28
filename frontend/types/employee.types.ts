@@ -43,12 +43,14 @@ export type EmployeeWritePayload = {
   status: EmployeeStatus;
 };
 
-export type CreateEmployeePayload = EmployeeWritePayload;
+/** Server assigns employeeCode (e.g. EMP-001) on create. */
+export type CreateEmployeePayload = Omit<EmployeeWritePayload, "employeeCode">;
 
 export type EmployeeListQuery = {
   status?: EmployeeStatus;
   department?: string;
   search?: string;
+  supervisorUsersOnly?: boolean;
   page?: number;
   limit?: number;
 };

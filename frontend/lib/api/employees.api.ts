@@ -13,6 +13,12 @@ export function listEmployees(query: EmployeeListQuery = {}) {
       status: query.status,
       department: query.department,
       search: query.search,
+      supervisorUsersOnly:
+        query.supervisorUsersOnly === undefined
+          ? undefined
+          : query.supervisorUsersOnly
+            ? "true"
+            : undefined,
       page: query.page,
       limit: query.limit,
     })}`,

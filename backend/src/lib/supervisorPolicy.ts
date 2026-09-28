@@ -1,12 +1,19 @@
-import type { EmployeeStatus } from "@prisma/client";
+import type { EmployeeStatus, Role } from "@prisma/client";
+
+export const SUPERVISOR_USER_ROLE: Role = "SUPERVISOR";
 
 export const SUPERVISOR_MESSAGES = {
   required: "Supervisor is required.",
   notFound: "Supervisor not found",
+  notSupervisorUser: "Only supervisor users can be selected as supervisor.",
   self: "Employees cannot supervise themselves.",
   circular: "This would create a circular supervisor relationship.",
   inactive: "Inactive employees cannot be selected as supervisor.",
 } as const;
+
+export function isSupervisorUserRole(role: Role | null | undefined): boolean {
+  return role === SUPERVISOR_USER_ROLE;
+}
 
 export function isSelfSupervision(
   employeeId: string | null | undefined,

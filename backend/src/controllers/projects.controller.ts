@@ -6,7 +6,13 @@ import {
   projectIdConflictBody,
 } from "../lib/uniqueConstraint";
 import { prisma } from "../lib/prisma";
+import { generateNextProjectCode } from "../lib/projectCode";
 import {
+  isSupervisorUserRole,
+  SUPERVISOR_MESSAGES,
+} from "../lib/supervisorPolicy";
+import {
+  createProjectBodySchema,
   listProjectsQuerySchema,
   projectBodySchema,
 } from "../schemas/project.schema";
@@ -78,11 +84,27 @@ async function assertProjectManagerExists(
 ): Promise<boolean> {
   const employee = await prisma.employee.findUnique({
     where: { id: projectManagerId },
-    select: { id: true },
+    select: {
+      id: true,
+      user: { select: { role: true } },
+    },
   });
 
   if (!employee) {
     res.status(404).json({ message: "Project manager not found" });
+    return false;
+  }
+
+  if (!isSupervisorUserRole(employee.user?.role)) {
+    res.status(422).json({
+      message: "Validation failed",
+      errors: {
+        formErrors: [] as string[],
+        fieldErrors: {
+          projectManagerId: [SUPERVISOR_MESSAGES.notSupervisorUser],
+        },
+      },
+    });
     return false;
   }
 
@@ -98,7 +120,7 @@ export const createProject = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const parsed = projectBodySchema.safeParse(req.body);
+  const parsed = createProjectBodySchema.safeParse(req.body);
   if (!parsed.success) {
     return validationError(res, parsed.error);
   }
@@ -110,9 +132,10 @@ export const createProject = async (req: Request, res: Response) => {
   }
 
   try {
+    const projectCode = await generateNextProjectCode();
     const project = await prisma.project.create({
       data: {
-        projectCode: data.projectCode,
+        projectCode,
         name: data.name,
         type: data.type,
         customerName: data.customerName,

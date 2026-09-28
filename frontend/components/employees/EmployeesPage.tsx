@@ -3,7 +3,8 @@
 import { EmployeeForm } from "@/components/employees/EmployeeForm";
 import { Notice, StatusBadge } from "@/components/master-data/Notice";
 import { controlClassName } from "@/components/master-data/FormControls";
-import { listAllEmployees, listEmployees } from "@/lib/api/employees.api";
+import { listEmployees } from "@/lib/api/employees.api";
+import { listSupervisorUserEmployees } from "@/lib/masterData/supervisorUsers";
 import { ApiError } from "@/lib/api/client";
 import { canAccessPath, isPlannerRole } from "@/lib/auth/roles";
 import { formatWorkingDays } from "@/lib/masterData/constants";
@@ -54,20 +55,20 @@ export function EmployeesPage() {
       setLoading(true);
       setError(null);
       try {
-        const [response, all] = await Promise.all([
+        const [response, supervisorUsers] = await Promise.all([
           listEmployees({
             page,
             limit: 20,
             search: search.trim() || undefined,
             status: status || undefined,
           }),
-          listAllEmployees(),
+          listSupervisorUserEmployees(),
         ]);
         if (cancelled) {
           return;
         }
         setEmployees(response.data);
-        setSupervisors(all);
+        setSupervisors(supervisorUsers);
         setTotalPages(response.pagination.totalPages || 1);
         setTotal(response.pagination.total);
       } catch (err) {

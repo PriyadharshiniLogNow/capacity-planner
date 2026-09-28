@@ -3,7 +3,7 @@
 import { Notice, StatusBadge } from "@/components/master-data/Notice";
 import { controlClassName } from "@/components/master-data/FormControls";
 import { ProjectForm } from "@/components/projects/ProjectForm";
-import { listAllEmployees } from "@/lib/api/employees.api";
+import { listSupervisorUserEmployees } from "@/lib/masterData/supervisorUsers";
 import { listProjects } from "@/lib/api/projects.api";
 import { ApiError } from "@/lib/api/client";
 import { canAccessPath, isPlannerRole } from "@/lib/auth/roles";
@@ -22,7 +22,7 @@ export function ProjectsPage() {
   const canEdit = Boolean(user && isPlannerRole(user.role));
 
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
-  const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
+  const [supervisorUsers, setSupervisorUsers] = useState<EmployeeResponse[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -55,20 +55,20 @@ export function ProjectsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [response, allEmployees] = await Promise.all([
+        const [response, managers] = await Promise.all([
           listProjects({
             page,
             limit: 20,
             search: search.trim() || undefined,
             status: status || undefined,
           }),
-          listAllEmployees(),
+          listSupervisorUserEmployees(),
         ]);
         if (cancelled) {
           return;
         }
         setProjects(response.data);
-        setEmployees(allEmployees);
+        setSupervisorUsers(managers);
         setTotalPages(response.pagination.totalPages || 1);
         setTotal(response.pagination.total);
       } catch (err) {
@@ -270,7 +270,7 @@ export function ProjectsPage() {
             <ProjectForm
               mode={panel.mode}
               project={panel.project}
-              employees={employees}
+              employees={supervisorUsers}
               onCancel={() => setPanel(null)}
               onSaved={(_saved, message) => {
                 setPanel(null);

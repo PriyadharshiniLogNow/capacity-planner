@@ -160,6 +160,7 @@ export function EmployeeForm({
     }
 
     const errors = validateEmployeeForm(values, {
+      mode,
       requireSupervisor,
       employeeId: employee?.id,
       currentSupervisorId: employee?.supervisorId,
@@ -176,8 +177,7 @@ export function EmployeeForm({
         ? employee.workingDays
         : workingDaysFromPreset(values.workingDaysPreset, employee?.workingDays ?? []);
 
-    const payload = {
-      employeeCode: values.employeeCode.trim(),
+    const sharedPayload = {
       firstName: values.firstName.trim(),
       lastName: values.lastName.trim(),
       email: values.email.trim(),
@@ -194,10 +194,13 @@ export function EmployeeForm({
     setIsSubmitting(true);
     try {
       if (isCreate) {
-        const created = await createEmployee(payload);
+        const created = await createEmployee(sharedPayload);
         onSaved(created, "Employee saved successfully.");
       } else if (employee) {
-        const updated = await updateEmployee(employee.id, payload);
+        const updated = await updateEmployee(employee.id, {
+          ...sharedPayload,
+          employeeCode: values.employeeCode.trim(),
+        });
         onSaved(updated, "Employee saved successfully.");
       }
     } catch (error) {
@@ -231,11 +234,17 @@ export function EmployeeForm({
         <FormInput
           id={`${id}-code`}
           label="Employee ID"
-          required
           value={values.employeeCode}
-          disabled={readOnly || isSubmitting}
+          disabled
+          readOnly
+          placeholder={isCreate ? "Assigned when saved (e.g. EMP-001)" : undefined}
+          hint={
+            isCreate
+              ? "Employee ID is generated automatically and cannot be edited."
+              : "Employee ID cannot be edited."
+          }
           error={fieldErrors.employeeCode}
-          onChange={(event) => patch("employeeCode", event.target.value)}
+          onChange={() => undefined}
         />
         <FormSelect
           id={`${id}-status`}
@@ -319,7 +328,7 @@ export function EmployeeForm({
           value={values.supervisorId}
           error={fieldErrors.supervisorId}
           options={supervisorOptions}
-          placeholder="Search supervisors"
+          placeholder="Search supervisor users"
           onChange={(value) => patch("supervisorId", value)}
         />
         <FormInput

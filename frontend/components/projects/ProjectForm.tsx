@@ -136,15 +136,14 @@ export function ProjectForm({
       return;
     }
 
-    const errors = validateProjectForm(values);
+    const errors = validateProjectForm(values, { mode });
     setFieldErrors(errors);
     setFormError(null);
     if (Object.values(errors).some(Boolean)) {
       return;
     }
 
-    const payload = {
-      projectCode: values.projectCode.trim(),
+    const sharedPayload = {
       name: values.name.trim(),
       type: values.type === "CUSTOMER" ? "CUSTOMER" : "INTERNAL",
       customerName:
@@ -161,10 +160,13 @@ export function ProjectForm({
     setIsSubmitting(true);
     try {
       if (isCreate) {
-        const created = await createProject(payload);
+        const created = await createProject(sharedPayload);
         onSaved(created, "Project saved successfully.");
       } else if (project) {
-        const updated = await updateProject(project.id, payload);
+        const updated = await updateProject(project.id, {
+          ...sharedPayload,
+          projectCode: values.projectCode.trim(),
+        });
         onSaved(updated, "Project saved successfully.");
       }
     } catch (error) {
@@ -198,11 +200,17 @@ export function ProjectForm({
         <FormInput
           id={`${id}-code`}
           label="Project ID"
-          required
           value={values.projectCode}
-          disabled={readOnly || isSubmitting}
+          disabled
+          readOnly
+          placeholder={isCreate ? "Assigned when saved (e.g. PROJ-001)" : undefined}
+          hint={
+            isCreate
+              ? "Project ID is generated automatically and cannot be edited."
+              : "Project ID cannot be edited."
+          }
           error={fieldErrors.projectCode}
-          onChange={(event) => patch("projectCode", event.target.value)}
+          onChange={() => undefined}
         />
         <FormInput
           id={`${id}-name`}
