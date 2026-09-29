@@ -1,34 +1,20 @@
-import { getRoleLabel } from "@/lib/auth/roles";
-import type { Role } from "@/types/auth.types";
-
 type DashboardHeaderProps = {
   title: string;
   description: string;
-  displayName: string;
-  role: Role;
 };
 
-export function DashboardHeader({
-  title,
-  description,
-  displayName,
-  role,
-}: DashboardHeaderProps) {
+export function DashboardHeader({ title, description }: DashboardHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-3 flex items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-semibold tracking-[0.16em] text-accent">
-          LOGNOW CAPACITY PLANNER
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+        <h1 className="text-[26px] font-bold leading-tight text-foreground">
           {title}
         </h1>
-        <p className="mt-1 text-sm text-muted">{description}</p>
+        <p className="mt-0.5 text-[13px] text-muted">{description}</p>
       </div>
-      <div className="rounded-2xl border border-border bg-surface px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">{displayName}</p>
-        <p className="text-xs text-muted">{getRoleLabel(role)}</p>
-      </div>
+      <span className="mt-1 inline-flex shrink-0 items-center rounded border border-border px-2 py-0.5 text-[11px] font-medium text-muted">
+        Prototype
+      </span>
     </div>
   );
 }
