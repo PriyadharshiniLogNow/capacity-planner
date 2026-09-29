@@ -1,7 +1,12 @@
 "use client";
 
 import { SpinnerIcon } from "@/components/auth/icons";
-import { FormInput, FormSelect } from "@/components/master-data/FormControls";
+import {
+  FormInput,
+  FormSelect,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+} from "@/components/master-data/FormControls";
 import { SearchableSelect } from "@/components/master-data/SearchableSelect";
 import { Notice } from "@/components/master-data/Notice";
 import { ApiError } from "@/lib/api/client";
@@ -188,15 +193,15 @@ export function ProjectForm({
     mode === "create" ? "New project" : mode === "edit" ? "Edit project" : "Project details";
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold tracking-[0.16em] text-accent">MASTER DATA</p>
-        <h2 id="project-form-title" className="mt-1 text-xl font-semibold text-foreground">{title}</h2>
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <div className="border-b border-border pb-3">
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-accent">MASTER DATA</p>
+        <h2 id="project-form-title" className="mt-1 text-lg font-semibold leading-tight text-foreground">{title}</h2>
       </div>
 
       {formError ? <Notice tone="error">{formError}</Notice> : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FormInput
           id={`${id}-code`}
           label="Project ID"
@@ -310,11 +315,11 @@ export function ProjectForm({
         </FormSelect>
       </div>
 
-      <div className="flex flex-wrap justify-end gap-3 pt-2">
+      <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className={secondaryButtonClassName + " px-4"}
         >
           {readOnly ? "Close" : "Cancel"}
         </button>
@@ -322,7 +327,7 @@ export function ProjectForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_24px_rgba(108,76,232,0.28)] transition hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-70"
+            className={primaryButtonClassName + " px-4"}
           >
             {isSubmitting ? (
               <>

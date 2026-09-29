@@ -2,7 +2,13 @@
 
 import { EmployeeForm } from "@/components/employees/EmployeeForm";
 import { Notice, StatusBadge } from "@/components/master-data/Notice";
-import { controlClassName } from "@/components/master-data/FormControls";
+import {
+  codeChipClassName,
+  filterControlClassName,
+  pagerButtonClassName,
+  primaryButtonClassName,
+  rowActionClassName,
+} from "@/components/master-data/FormControls";
 import { listEmployees } from "@/lib/api/employees.api";
 import { listSupervisorUserEmployees } from "@/lib/masterData/supervisorUsers";
 import { ApiError } from "@/lib/api/client";
@@ -95,16 +101,16 @@ export function EmployeesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-accent">
+    <div className="mx-auto w-full max-w-[1280px]">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold tracking-[0.16em] text-accent">
             LOGNOW CAPACITY PLANNER
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="mt-0.5 text-[26px] font-bold leading-tight text-foreground">
             Employees
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-0.5 text-[13px] text-muted">
             Master data used for capacity, assignments, time entry, and reporting.
           </p>
         </div>
@@ -115,7 +121,7 @@ export function EmployeesPage() {
               setNotice(null);
               setPanel({ mode: "create" });
             }}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_24px_rgba(108,76,232,0.28)] hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className={primaryButtonClassName + " mt-1 shrink-0"}
           >
             New employee
           </button>
@@ -123,20 +129,20 @@ export function EmployeesPage() {
       </div>
 
       {notice ? (
-        <div className="mb-4">
+        <div className="mb-3">
           <Notice tone="success">{notice}</Notice>
         </div>
       ) : null}
       {error ? (
-        <div className="mb-4">
+        <div className="mb-3">
           <Notice tone="error">{error}</Notice>
         </div>
       ) : null}
 
-      <section className="mb-4 rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)]">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-medium text-foreground">Search</span>
+      <section className="mb-3 rounded-md border border-border bg-surface px-3 py-2.5 shadow-[0_1px_2px_rgba(0,26,51,0.04)]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <label className="flex w-full min-w-0 items-center gap-2 text-[13px] sm:w-auto sm:flex-1 sm:max-w-md">
+            <span className="shrink-0 font-medium text-foreground">Search</span>
             <input
               type="search"
               value={search}
@@ -145,78 +151,100 @@ export function EmployeesPage() {
                 setSearch(event.target.value);
               }}
               placeholder="ID, first name, or last name"
-              className={controlClassName + " border-border"}
+              className={filterControlClassName + " min-w-0 flex-1"}
             />
           </label>
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-medium text-foreground">Status</span>
+          <label className="flex min-w-0 items-center gap-2 text-[13px]">
+            <span className="shrink-0 font-medium text-foreground">Status</span>
             <select
               value={status}
               onChange={(event) => {
                 setPage(1);
                 setStatus(event.target.value as EmployeeStatus | "");
               }}
-              className={controlClassName + " border-border"}
+              className={filterControlClassName + " min-w-[9rem]"}
             >
               <option value="">All statuses</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
             </select>
           </label>
-          <p className="self-end text-sm text-muted">{total} employees</p>
+          <p className="ml-auto inline-flex items-center rounded-full border border-[#93c5fd] bg-[#eff6ff] px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-[#1d4ed8]">
+            {total} employees
+          </p>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_30px_rgba(88,70,180,0.06)]">
+      <section className="overflow-hidden rounded-md border border-border bg-surface shadow-[0_1px_2px_rgba(0,26,51,0.04)]">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-accent-soft/60 text-xs font-semibold uppercase tracking-wide text-muted">
-              <tr>
-                <th className="px-4 py-3">Employee ID</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Department</th>
-                <th className="px-4 py-3">Hours</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
+          <table className="w-full min-w-[760px] border-collapse text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-border bg-[#e8eef5] text-foreground">
+                <th className="px-3 py-2.5 font-semibold">Employee ID</th>
+                <th className="px-3 py-2.5 font-semibold">Name</th>
+                <th className="px-3 py-2.5 font-semibold">Role</th>
+                <th className="px-3 py-2.5 font-semibold">Department</th>
+                <th className="px-3 py-2.5 text-right font-semibold">Hours</th>
+                <th className="px-3 py-2.5 font-semibold">Status</th>
+                <th className="px-3 py-2.5 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted">
-                    Loading employees...
+                  <td colSpan={7} className="px-3 py-10 text-center text-muted">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="h-2 w-2 animate-pulse rounded-full bg-accent"
+                      />
+                      Loading employees...
+                    </span>
                   </td>
                 </tr>
               ) : employees.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-10 text-center text-muted">
                     No employees found.
                   </td>
                 </tr>
               ) : (
-                employees.map((employee) => (
-                  <tr key={employee.id} className="border-t border-border">
-                    <td className="px-4 py-3 font-medium">{employee.employeeCode}</td>
-                    <td className="px-4 py-3">
+                employees.map((employee, index) => (
+                  <tr
+                    key={employee.id}
+                    className={[
+                      "transition-colors hover:bg-[#f4f8ff]",
+                      index > 0 ? "border-t border-border" : "",
+                    ].join(" ")}
+                  >
+                    <td className="px-3 py-2">
+                      <span className={codeChipClassName}>{employee.employeeCode}</span>
+                    </td>
+                    <td className="px-3 py-2 font-semibold text-foreground">
                       {employee.firstName} {employee.lastName}
                     </td>
-                    <td className="px-4 py-3">{employee.role}</td>
-                    <td className="px-4 py-3">{employee.department}</td>
-                    <td className="px-4 py-3" title={formatWorkingDays(employee.workingDays)}>
+                    <td className="px-3 py-2">
+                      <StatusBadge label={employee.role} tone="purple" />
+                    </td>
+                    <td className="px-3 py-2 text-muted">{employee.department}</td>
+                    <td
+                      className="px-3 py-2 text-right font-semibold tabular-nums text-foreground"
+                      title={formatWorkingDays(employee.workingDays)}
+                    >
                       {employee.weeklyHours}h
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <StatusBadge
                         label={employee.status === "ACTIVE" ? "Active" : "Inactive"}
                         tone={employee.status === "ACTIVE" ? "active" : "inactive"}
+                        dot
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-3">
+                    <td className="px-3 py-1.5 text-right">
+                      <div className="inline-flex gap-1">
                         <button
                           type="button"
-                          className="font-medium text-accent hover:underline"
+                          className={rowActionClassName}
                           onClick={() => setPanel({ mode: "view", employee })}
                         >
                           View
@@ -224,7 +252,7 @@ export function EmployeesPage() {
                         {canEdit ? (
                           <button
                             type="button"
-                            className="font-medium text-accent hover:underline"
+                            className={rowActionClassName}
                             onClick={() => setPanel({ mode: "edit", employee })}
                           >
                             Edit
@@ -239,23 +267,23 @@ export function EmployeesPage() {
           </table>
         </div>
         {totalPages > 1 ? (
-          <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-[#f7f9fc] px-3 py-2">
             <button
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+              className={pagerButtonClassName}
             >
               Previous
             </button>
-            <span className="text-sm text-muted">
+            <span className="text-[13px] tabular-nums text-muted">
               Page {page} of {totalPages}
             </span>
             <button
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((current) => current + 1)}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+              className={pagerButtonClassName}
             >
               Next
             </button>
@@ -265,12 +293,12 @@ export function EmployeesPage() {
 
       {panel ? (
         <div
-          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-foreground/25 p-4 sm:p-8"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/30 p-4 sm:p-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="employee-form-title"
         >
-          <div className="w-full max-w-3xl rounded-2xl border border-border bg-surface p-6 shadow-[0_16px_50px_rgba(27,23,64,0.18)]">
+          <div className="w-full max-w-3xl rounded-md border border-border border-t-[3px] border-t-accent bg-surface p-5 shadow-[0_16px_40px_rgba(0,26,51,0.16)]">
             <EmployeeForm
               mode={panel.mode}
               employee={panel.employee}
