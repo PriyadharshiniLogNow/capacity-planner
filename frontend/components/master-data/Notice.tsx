@@ -10,10 +10,10 @@ export function Notice({ tone, children }: NoticeProps) {
     <p
       role={isError ? "alert" : "status"}
       className={[
-        "rounded-xl border px-3 py-2.5 text-sm",
+        "rounded-md border border-l-[3px] px-3 py-2 text-[13px] font-medium",
         isError
-          ? "border-utilization-critical/20 bg-utilization-critical/5 text-utilization-critical"
-          : "border-utilization-well/20 bg-utilization-well/5 text-utilization-well",
+          ? "border-[#fca5a5] border-l-[#dc2626] bg-[#fef2f2] text-[#b91c1c]"
+          : "border-[#86efac] border-l-[#16a34a] bg-[#f0fdf4] text-[#15803d]",
       ].join(" ")}
     >
       {children}
@@ -21,21 +21,48 @@ export function Notice({ tone, children }: NoticeProps) {
   );
 }
 
-type StatusBadgeProps = {
-  label: string;
-  tone: "active" | "inactive";
+/**
+ * Badge tones mirror the Planning grid palette:
+ * green = active / customer, blue = internal / info, amber = highlight,
+ * purple = classification, neutral = inactive / closed.
+ */
+export type BadgeTone =
+  | "active"
+  | "inactive"
+  | "green"
+  | "blue"
+  | "amber"
+  | "purple"
+  | "neutral";
+
+const badgeToneClass: Record<BadgeTone, string> = {
+  active: "border-[#86efac] bg-[#f0fdf4] text-[#15803d]",
+  green: "border-[#86efac] bg-[#f0fdf4] text-[#15803d]",
+  blue: "border-[#93c5fd] bg-[#eff6ff] text-[#1d4ed8]",
+  amber: "border-[#fcd34d] bg-[#fffbeb] text-[#b45309]",
+  purple: "border-[#c4b5fd] bg-[#f5f3ff] text-[#6d28d9]",
+  inactive: "border-[#d1d5db] bg-[#f3f4f6] text-[#4b5563]",
+  neutral: "border-[#d1d5db] bg-[#f3f4f6] text-[#4b5563]",
 };
 
-export function StatusBadge({ label, tone }: StatusBadgeProps) {
+type StatusBadgeProps = {
+  label: string;
+  tone: BadgeTone;
+  /** Show a small leading dot; used for lifecycle status (Active / Inactive / Closed). */
+  dot?: boolean;
+};
+
+export function StatusBadge({ label, tone, dot = false }: StatusBadgeProps) {
   return (
     <span
       className={[
-        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-        tone === "active"
-          ? "bg-utilization-well/15 text-utilization-well"
-          : "bg-muted/15 text-muted",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        badgeToneClass[tone],
       ].join(" ")}
     >
+      {dot ? (
+        <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+      ) : null}
       {label}
     </span>
   );

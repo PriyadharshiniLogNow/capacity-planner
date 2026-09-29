@@ -122,25 +122,25 @@ export function SearchableSelect({
           <ul
             id={listId}
             role="listbox"
-            className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface py-1 shadow-[0_12px_30px_rgba(88,70,180,0.12)]"
+            className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-surface py-1 shadow-[0_16px_40px_rgba(0,26,51,0.16)]"
           >
             {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-muted">No matches</li>
+              <li className="px-3 py-2 text-[13px] text-muted">No matches</li>
             ) : (
               filtered.map((option, index) => (
                 <li key={option.value} role="option" aria-selected={option.value === value}>
                   <button
                     type="button"
                     className={[
-                      "flex w-full flex-col items-start px-3 py-2 text-left text-sm",
-                      index === activeIndex ? "bg-accent-soft text-accent" : "text-foreground",
+                      "flex w-full flex-col items-start px-3 py-2 text-left text-[13px]",
+                      index === activeIndex ? "bg-background text-accent" : "text-foreground",
                     ].join(" ")}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => selectOption(option)}
                   >
                     <span>{option.label}</span>
                     {option.hint ? (
-                      <span className="text-xs text-muted">{option.hint}</span>
+                      <span className="text-[11px] text-muted">{option.hint}</span>
                     ) : null}
                   </button>
                 </li>
