@@ -27,22 +27,20 @@ export function DashboardPage() {
   const isManagement = role === "SUPERVISOR";
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-[1280px]">
       <DashboardHeader
         title={
           isEmployee
             ? "My Capacity"
             : isManagement
-              ? "Management Dashboard"
-              : "Dashboard"
+              ? "Capacity Dashboard"
+              : "Capacity Dashboard"
         }
         description={
           isEmployee
             ? `Welcome, ${firstName}. Your capacity for the selected six-week period.`
-            : "Capacity overview for the selected period"
+            : "Management view for the next six weeks"
         }
-        displayName={dashboard.displayName ?? dashboard.user.email}
-        role={dashboard.user.role}
       />
 
       <DashboardFilters
@@ -63,7 +61,7 @@ export function DashboardPage() {
 
       {!dashboard.loading && !dashboard.error && !dashboard.empty ? (
         isEmployee ? (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <DashboardKpiGrid kpis={dashboard.kpis} />
             <EmployeeWeeklyTables
               weeks={dashboard.employeeWeeks}
@@ -74,18 +72,23 @@ export function DashboardPage() {
             ) : null}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <DashboardKpiGrid kpis={dashboard.kpis} />
-            <CapacityStackedChart weeks={dashboard.chart} />
+
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+              <CapacityStackedChart weeks={dashboard.chart} />
+              <FreeResourcesList rows={dashboard.freeResources} />
+            </div>
+
             <UtilizationHeatmap
               rows={dashboard.heatmap}
               weekStarts={dashboard.weekStarts}
             />
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <FreeResourcesList rows={dashboard.freeResources} />
+
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
               <PlanActualVariance rows={dashboard.variance} />
+              <OverallocationCard rows={dashboard.overallocation} />
             </div>
-            <OverallocationCard rows={dashboard.overallocation} />
           </div>
         )
       ) : null}

@@ -4,7 +4,7 @@ import {
   type PlanningDay,
 } from "@/lib/planning/calculations";
 import type { ProjectResponse } from "@/types/project.types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type AddProjectModalProps = {
   open: boolean;
@@ -16,6 +16,32 @@ type AddProjectModalProps = {
     dailyHours: ReturnType<typeof emptyDailyHours>,
   ) => string | null;
 };
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[·•\-–—_/.,]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function projectSearchText(project: ProjectResponse): string {
+  return normalizeSearch(
+    [
+      project.projectCode,
+      project.name,
+      project.customerName ?? "",
+      project.type,
+      project.projectManager
+        ? `${project.projectManager.firstName} ${project.projectManager.lastName}`
+        : "",
+    ].join(" "),
+  );
+}
+
+function projectLabel(project: ProjectResponse): string {
+  return `${project.projectCode} · ${project.name}`;
+}
 
 export function AddProjectModal({
   open,
@@ -29,9 +55,16 @@ export function AddProjectModal({
   const [projectId, setProjectId] = useState("");
   const [hours, setHours] = useState(() => emptyDailyHours());
   const [error, setError] = useState<string | null>(null);
+  const [listOpen, setListOpen] = useState(false);
+  const searchWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const selected = useMemo(
+    () => projects.find((project) => project.id === projectId) ?? null,
+    [projects, projectId],
+  );
 
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = normalizeSearch(search);
     return projects.filter((project) => {
       if (typeFilter !== "ALL" && project.type !== typeFilter) {
         return false;
@@ -39,13 +72,27 @@ export function AddProjectModal({
       if (!query) {
         return true;
       }
-      return `${project.projectCode} ${project.name} ${project.type}`
-        .toLowerCase()
-        .includes(query);
+      return projectSearchText(project).includes(query);
     });
   }, [projects, search, typeFilter]);
 
-  const selected = projects.find((project) => project.id === projectId);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function onPointerDown(event: MouseEvent) {
+      if (!searchWrapRef.current?.contains(event.target as Node)) {
+        setListOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
+
+  const canAdd = Boolean(selected);
+  const showNoResults = projects.length === 0 || (listOpen && filtered.length === 0);
 
   if (!open) {
     return null;
@@ -57,7 +104,15 @@ export function AddProjectModal({
     setProjectId("");
     setHours(emptyDailyHours());
     setError(null);
+    setListOpen(false);
     onClose();
+  }
+
+  function selectProject(project: ProjectResponse) {
+    setProjectId(project.id);
+    setSearch(projectLabel(project));
+    setListOpen(false);
+    setError(null);
   }
 
   return (
@@ -81,24 +136,22 @@ export function AddProjectModal({
         </p>
 
         <label className="mt-4 block text-sm">
-          <span className="mb-1.5 block font-medium text-foreground">Search projects</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by name or code"
-            className="w-full rounded-md border border-border px-3 py-2 text-sm focus-visible:border-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-          />
-        </label>
-
-        <label className="mt-3 block text-sm">
           <span className="mb-1.5 block font-medium text-foreground">Type</span>
           <select
             value={typeFilter}
             onChange={(event) => {
-              setTypeFilter(event.target.value as "ALL" | "CUSTOMER" | "INTERNAL");
-              setProjectId("");
+              const next = event.target.value as "ALL" | "CUSTOMER" | "INTERNAL";
+              setTypeFilter(next);
               setError(null);
+              setListOpen(true);
+              if (
+                selected &&
+                next !== "ALL" &&
+                selected.type !== next
+              ) {
+                setProjectId("");
+                setSearch("");
+              }
             }}
             className="w-full rounded-md border border-border px-3 py-2 text-sm focus-visible:border-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           >
@@ -108,34 +161,94 @@ export function AddProjectModal({
           </select>
         </label>
 
-        <label className="mt-3 block text-sm">
-          <span className="mb-1.5 block font-medium text-foreground">Project</span>
-          <select
-            value={projectId}
-            onChange={(event) => {
-              setProjectId(event.target.value);
-              setError(null);
-            }}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm focus-visible:border-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-          >
-            <option value="">Select a project</option>
-            {filtered.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.projectCode} · {project.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div ref={searchWrapRef} className="relative mt-3">
+          <label className="block text-sm">
+            <span className="mb-1.5 block font-medium text-foreground">Search projects</span>
+            <input
+              type="search"
+              value={search}
+              autoComplete="off"
+              aria-expanded={listOpen}
+              aria-controls="project-search-results"
+              aria-autocomplete="list"
+              placeholder="Search by code, name, or customer"
+              onFocus={() => setListOpen(true)}
+              onChange={(event) => {
+                const next = event.target.value;
+                setSearch(next);
+                setListOpen(true);
+                setError(null);
+                if (!selected) {
+                  return;
+                }
+                if (normalizeSearch(next) !== normalizeSearch(projectLabel(selected))) {
+                  setProjectId("");
+                }
+              }}
+              className="w-full rounded-md border border-border px-3 py-2 text-sm focus-visible:border-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            />
+          </label>
+
+          {listOpen ? (
+            <ul
+              id="project-search-results"
+              role="listbox"
+              className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border bg-surface shadow-[0_8px_24px_rgba(0,26,51,0.12)]"
+            >
+              {filtered.length === 0 ? (
+                <li className="px-3 py-2.5 text-sm text-muted">
+                  No valid projects are available for this employee and week.
+                </li>
+              ) : (
+                filtered.map((project) => {
+                  const active = project.id === projectId;
+                  return (
+                    <li key={project.id} role="option" aria-selected={active}>
+                      <button
+                        type="button"
+                        onClick={() => selectProject(project)}
+                        className={[
+                          "flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-accent-soft",
+                          active ? "bg-accent-soft" : "",
+                        ].join(" ")}
+                      >
+                        <span className="font-medium text-foreground">
+                          {project.projectCode} · {project.name}
+                        </span>
+                        <span className="text-[11px] text-muted">
+                          {project.type === "CUSTOMER" ? "Customer" : "Internal"}
+                          {project.customerName ? ` · ${project.customerName}` : ""}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          ) : null}
+        </div>
 
         <div className="mt-3 rounded-md border border-border bg-background px-3 py-2 text-sm">
-          <p className="text-muted">Type</p>
-          <p className="font-medium text-foreground">
-            {selected
-              ? selected.type === "CUSTOMER"
-                ? "Customer"
-                : "Internal"
-              : "Determined from the project master"}
-          </p>
+          {selected ? (
+            <>
+              <p className="text-muted">Selected project</p>
+              <p className="font-medium text-foreground">{projectLabel(selected)}</p>
+              {selected.customerName ? (
+                <p className="mt-1 text-[12px] text-muted">{selected.customerName}</p>
+              ) : null}
+              <p className="mt-2 text-muted">Type</p>
+              <p className="font-medium text-foreground">
+                {selected.type === "CUSTOMER" ? "Customer" : "Internal"}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-muted">Type</p>
+              <p className="font-medium text-foreground">
+                Determined from the project master
+              </p>
+            </>
+          )}
         </div>
 
         <fieldset className="mt-4">
@@ -181,7 +294,7 @@ export function AddProjectModal({
           </p>
         ) : null}
 
-        {filtered.length === 0 ? (
+        {showNoResults && !selected ? (
           <p className="mt-3 text-sm text-muted">
             No valid projects are available for this employee and week.
           </p>
@@ -197,19 +310,20 @@ export function AddProjectModal({
           </button>
           <button
             type="button"
+            disabled={!canAdd}
             onClick={() => {
-              if (!projectId) {
+              if (!selected) {
                 setError("Select a project to continue.");
                 return;
               }
-              const message = onAdd(projectId, hours);
+              const message = onAdd(selected.id, hours);
               if (message) {
                 setError(message);
                 return;
               }
               resetAndClose();
             }}
-            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-hover"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add Project
           </button>

@@ -8,9 +8,9 @@ type OverallocationCardProps = {
 
 export function OverallocationCard({ rows }: OverallocationCardProps) {
   return (
-    <section className="rounded-2xl border border-utilization-critical/20 bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-      <h2 className="text-base font-semibold text-foreground">Overallocation</h2>
-      <p className="mb-4 text-sm text-muted">
+    <section className="rounded-md border border-utilization-critical/20 bg-surface p-4 shadow-[0_1px_2px_rgba(0,26,51,0.04)]">
+      <h2 className="text-[15px] font-semibold text-foreground">Overallocation</h2>
+      <p className="mb-3 text-[12px] text-muted">
         Planning above capacity is shown as a warning and is not silently accepted.
       </p>
       {rows.length === 0 ? (
