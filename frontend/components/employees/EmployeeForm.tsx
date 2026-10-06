@@ -11,6 +11,7 @@ import {
   EMPLOYEE_ROLES,
   WORKING_DAYS_PRESETS,
   findWorkingDaysPreset,
+  isSupervisorJobRole,
   withCurrentOption,
 } from "@/lib/masterData/constants";
 import {
@@ -121,7 +122,7 @@ export function EmployeeForm({
       .map((item) => ({
         value: item.id,
         label: `${item.firstName} ${item.lastName}`,
-        hint: item.employeeCode,
+        hint: item.email,
       }));
 
     if (
@@ -139,9 +140,9 @@ export function EmployeeForm({
     return options;
   }, [employee, supervisors, values.supervisorId]);
 
-  const requireSupervisor = supervisors.some(
-    (item) => item.status === "ACTIVE" && item.id !== employee?.id,
-  );
+  const requireSupervisor =
+    !isSupervisorJobRole(values.role) &&
+    supervisors.some((item) => item.status === "ACTIVE" && item.id !== employee?.id);
 
   function patch<K extends keyof EmployeeFormValues>(
     key: K,
@@ -295,7 +296,13 @@ export function EmployeeForm({
           value={values.role}
           disabled={readOnly || isSubmitting}
           error={fieldErrors.role}
-          onChange={(event) => patch("role", event.target.value)}
+          onChange={(event) => {
+            const role = event.target.value;
+            patch("role", role);
+            if (isSupervisorJobRole(role)) {
+              setFieldErrors((current) => ({ ...current, supervisorId: undefined }));
+            }
+          }}
         >
           <option value="">Select role</option>
           {roleOptions.map((role) => (

@@ -1,13 +1,31 @@
 import { describe, expect, it } from "vitest";
+import { supervisorProfileFromEmail } from "../src/lib/ensureSupervisorEmployees";
 import {
   isDirectCircularSupervision,
   isInactiveSupervisorSelection,
   isSelfSupervision,
+  isSupervisorJobRole,
   isSupervisorRequired,
   isSupervisorUserRole,
   SUPERVISOR_MESSAGES,
   supervisorIdFromLegacyManager,
 } from "../src/lib/supervisorPolicy";
+
+describe("supervisor profile from email", () => {
+  it("splits dotted addresses into a first and last name", () => {
+    expect(supervisorProfileFromEmail("priya.sharma@lognow.com")).toEqual({
+      firstName: "Priya",
+      lastName: "Sharma",
+    });
+  });
+
+  it("uses the mailbox name when the address has a single part", () => {
+    expect(supervisorProfileFromEmail("supervisor@lognow.test")).toEqual({
+      firstName: "Supervisor",
+      lastName: "Supervisor",
+    });
+  });
+});
 
 describe("supervisor policy", () => {
   it("recognizes supervisor auth users only", () => {
@@ -19,6 +37,13 @@ describe("supervisor policy", () => {
   it("requires a supervisor when other active employees exist", () => {
     expect(isSupervisorRequired(1)).toBe(true);
     expect(isSupervisorRequired(0)).toBe(false);
+  });
+
+  it("does not require a supervisor when the employee role is Supervisor", () => {
+    expect(isSupervisorJobRole("Supervisor")).toBe(true);
+    expect(isSupervisorJobRole("Developer")).toBe(false);
+    expect(isSupervisorRequired(1, "Supervisor")).toBe(false);
+    expect(isSupervisorRequired(1, "Developer")).toBe(true);
   });
 
   it("prevents employees from supervising themselves", () => {

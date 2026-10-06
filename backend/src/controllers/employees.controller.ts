@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { generateNextEmployeeCode } from "../lib/employeeCode";
+import { ensureSupervisorUserEmployees } from "../lib/ensureSupervisorEmployees";
 import { toEmployeeResponse } from "../lib/employeeMapper";
 import {
   isDirectCircularSupervision,
@@ -62,10 +63,11 @@ async function assertValidSupervisor(
     employeeId?: string;
     supervisorId: string | null;
     currentSupervisorId?: string | null;
+    jobRole?: string | null;
   },
   res: Response,
 ): Promise<boolean> {
-  const { employeeId, supervisorId, currentSupervisorId } = params;
+  const { employeeId, supervisorId, currentSupervisorId, jobRole } = params;
 
   const eligibleCount = await prisma.employee.count({
     where: {
@@ -75,7 +77,7 @@ async function assertValidSupervisor(
   });
 
   if (!supervisorId) {
-    if (isSupervisorRequired(eligibleCount)) {
+    if (isSupervisorRequired(eligibleCount, jobRole)) {
       fieldError(res, "supervisorId", SUPERVISOR_MESSAGES.required);
       return false;
     }
@@ -149,7 +151,7 @@ export const createEmployee = async (req: Request, res: Response) => {
 
   if (
     !(await assertValidSupervisor(
-      { supervisorId: data.supervisorId },
+      { supervisorId: data.supervisorId, jobRole: data.role },
       res,
     ))
   ) {
@@ -214,6 +216,9 @@ export const listEmployees = async (req: Request, res: Response) => {
   const where: Prisma.EmployeeWhereInput = {};
 
   if (supervisorUsersOnly) {
+    if (req.user?.id) {
+      await ensureSupervisorUserEmployees(req.user.id);
+    }
     where.user = { is: { role: "SUPERVISOR" } };
   }
   if (status) {
@@ -297,6 +302,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
         employeeId: id,
         supervisorId: data.supervisorId,
         currentSupervisorId: existing.supervisorId,
+        jobRole: data.role,
       },
       res,
     ))
