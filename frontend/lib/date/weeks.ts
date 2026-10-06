@@ -68,6 +68,25 @@ export function formatWeekLabel(weekStart: string, index: number): string {
   return `W${index + 1} · ${formatShortDate(weekStart)}`;
 }
 
+/** ISO week number for a Monday date-only string (display labels). */
+export function isoWeekNumber(weekStart: string): number {
+  const date = parseDateOnly(weekStart);
+  const target = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  const dayNr = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNr + 3);
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  return (
+    1 +
+    Math.round((target.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000))
+  );
+}
+
+export function formatIsoWeekLabel(weekStart: string): string {
+  return `W${isoWeekNumber(weekStart)}`;
+}
+
 const SHORT_MONTHS = [
   "Jan",
   "Feb",

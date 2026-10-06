@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { BrandMarkIcon } from "./icons";
 
 type AuthLayoutProps = {
   children: ReactNode;
@@ -24,15 +23,19 @@ export function AuthLayout({ children, wide = false }: AuthLayoutProps) {
           ].join(" ")}
         >
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground shadow-[0_8px_20px_rgba(108,76,232,0.28)]">
-                <BrandMarkIcon />
-              </div>
+            <div className="flex items-start gap-1.5">
+              <img
+                src="/lognow-logo.png?v=2"
+                alt="LogNow"
+                width={28}
+                height={28}
+                className="mt-0.5 h-7 w-7 shrink-0 object-contain"
+              />
               <div className="text-left">
-                <p className="text-lg font-bold tracking-[0.18em] text-foreground">
+                <p className="text-lg font-bold tracking-[0.18em] text-accent">
                   LOGNOW
                 </p>
-                <p className="text-sm text-muted">Capacity Planner</p>
+                <p className="text-sm font-bold text-foreground">Capacity Planner</p>
               </div>
             </div>
           </div>

@@ -1,9 +1,9 @@
 import type { HeatmapRow } from "@/hooks/useDashboard";
-import { formatShortDate } from "@/lib/date/weeks";
+import { formatIsoWeekLabel, formatShortDate } from "@/lib/date/weeks";
 import {
   formatPercent,
   getUtilizationStatus,
-  utilizationHeatmapClass,
+  type UtilizationLevel,
 } from "@/lib/utilization";
 
 type UtilizationHeatmapProps = {
@@ -11,20 +11,53 @@ type UtilizationHeatmapProps = {
   weekStarts: string[];
 };
 
+function heatmapCellClass(level: UtilizationLevel): string {
+  switch (level) {
+    case "under":
+    case "partial":
+      return "bg-[#fff7ed] text-[#c2410c] border border-[#fdba74]";
+    case "well":
+      return "bg-[#f0fdf4] text-[#15803d] border border-[#86efac]";
+    case "warning":
+    case "critical":
+      return "bg-[#fef2f2] text-[#b91c1c] border border-[#fca5a5]";
+  }
+}
+
 export function UtilizationHeatmap({ rows, weekStarts }: UtilizationHeatmapProps) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-      <h2 className="text-base font-semibold text-foreground">Utilization heatmap</h2>
-      <p className="mb-4 text-sm text-muted">Employee × week planned utilization</p>
+    <section className="rounded-md border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(0,26,51,0.04)]">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-[15px] font-semibold text-foreground">
+            Resource Utilization Heatmap
+          </h2>
+          <p className="text-[12px] text-muted">Employee × week planned utilization</p>
+        </div>
+        <ul className="flex flex-wrap gap-3 text-[11px] text-muted">
+          <li className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-[#f59e0b]" />
+            Low
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-[#22c55e]" />
+            Good
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-[#ef4444]" />
+            Overallocated
+          </li>
+        </ul>
+      </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[40rem] w-full border-separate border-spacing-1 text-sm">
+        <table className="min-w-[40rem] w-full border-separate border-spacing-1 text-[13px]">
           <thead>
             <tr>
-              <th className="px-2 py-1 text-left font-medium text-muted">Employee</th>
-              {weekStarts.map((weekStart, index) => (
-                <th key={weekStart} className="px-2 py-1 text-center font-medium text-muted">
-                  W{index + 1}
-                  <span className="mt-0.5 block text-[11px] font-normal">
+              <th className="px-2 py-1.5 text-left font-semibold text-foreground">Employee</th>
+              {weekStarts.map((weekStart) => (
+                <th key={weekStart} className="px-2 py-1.5 text-center font-semibold text-foreground">
+                  {formatIsoWeekLabel(weekStart)}
+                  <span className="mt-0.5 block text-[11px] font-normal text-muted">
                     {formatShortDate(weekStart)}
                   </span>
                 </th>
@@ -42,7 +75,7 @@ export function UtilizationHeatmap({ rows, weekStarts }: UtilizationHeatmapProps
                   if (!cell) {
                     return (
                       <td key={weekStart} className="px-1 py-1">
-                        <div className="rounded-lg bg-border/40 px-2 py-2 text-center text-xs text-muted">
+                        <div className="rounded border border-border bg-background px-2 py-2 text-center text-[11px] text-muted">
                           —
                         </div>
                       </td>
@@ -52,7 +85,7 @@ export function UtilizationHeatmap({ rows, weekStarts }: UtilizationHeatmapProps
                   return (
                     <td key={weekStart} className="px-1 py-1">
                       <div
-                        className={`rounded-lg px-2 py-2 text-center text-xs font-semibold ${utilizationHeatmapClass(status.level)}`}
+                        className={`rounded px-2 py-2 text-center text-[11px] font-semibold ${heatmapCellClass(status.level)}`}
                       >
                         {formatPercent(cell.utilization)}
                       </div>

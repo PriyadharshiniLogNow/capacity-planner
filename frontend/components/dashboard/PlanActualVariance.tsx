@@ -7,9 +7,9 @@ type PlanActualVarianceProps = {
 
 export function PlanActualVariance({ rows }: PlanActualVarianceProps) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(88,70,180,0.06)] sm:p-5">
-      <h2 className="text-base font-semibold text-foreground">Plan vs actual variance</h2>
-      <p className="mb-4 text-sm text-muted">Actual productive hours minus planned productive hours</p>
+    <section className="rounded-md border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(0,26,51,0.04)]">
+      <h2 className="text-[15px] font-semibold text-foreground">Plan vs actual variance</h2>
+      <p className="mb-3 text-[12px] text-muted">Actual productive hours minus planned productive hours</p>
       {rows.length === 0 ? (
         <p className="text-sm text-muted">No plan or actual hours for the selected filters.</p>
       ) : (

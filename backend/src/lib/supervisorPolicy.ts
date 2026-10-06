@@ -2,6 +2,9 @@ import type { EmployeeStatus, Role } from "@prisma/client";
 
 export const SUPERVISOR_USER_ROLE: Role = "SUPERVISOR";
 
+/** Job title on the employee record. Distinct from the login role. */
+export const SUPERVISOR_JOB_ROLE = "Supervisor";
+
 export const SUPERVISOR_MESSAGES = {
   required: "Supervisor is required.",
   notFound: "Supervisor not found",
@@ -13,6 +16,10 @@ export const SUPERVISOR_MESSAGES = {
 
 export function isSupervisorUserRole(role: Role | null | undefined): boolean {
   return role === SUPERVISOR_USER_ROLE;
+}
+
+export function isSupervisorJobRole(role: string | null | undefined): boolean {
+  return role?.trim().toLowerCase() === SUPERVISOR_JOB_ROLE.toLowerCase();
 }
 
 export function isSelfSupervision(
@@ -40,7 +47,13 @@ export function isInactiveSupervisorSelection(params: {
   return params.selectedSupervisorId !== params.currentSupervisorId;
 }
 
-export function isSupervisorRequired(eligibleActiveCount: number): boolean {
+export function isSupervisorRequired(
+  eligibleActiveCount: number,
+  jobRole?: string | null,
+): boolean {
+  if (isSupervisorJobRole(jobRole)) {
+    return false;
+  }
   return eligibleActiveCount > 0;
 }
 

@@ -1,13 +1,17 @@
 export const INTERNAL_CUSTOMER_NAME = "Log Now";
 
+export const SUPERVISOR_JOB_ROLE = "Supervisor";
+
+export function isSupervisorJobRole(role: string): boolean {
+  return role.trim().toLowerCase() === SUPERVISOR_JOB_ROLE.toLowerCase();
+}
+
 export const EMPLOYEE_ROLES = [
-  "Consultant",
-  "Senior Consultant",
-  "Analyst",
+  "HR",
+  "Developer",
+  "SAP Consultant",
+  "Supervisor",
   "Project Manager",
-  "Manager",
-  "Director",
-  "Administrator",
 ] as const;
 
 export const EMPLOYEE_DEPARTMENTS = [

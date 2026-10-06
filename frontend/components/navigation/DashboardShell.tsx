@@ -38,12 +38,21 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <div className="flex min-h-screen">
         <aside className="hidden w-56 shrink-0 bg-sidebar text-sidebar-text lg:flex lg:flex-col">
           <div className="px-5 pb-4 pt-6">
-            <p className="text-[22px] font-bold leading-none tracking-wide text-white">
-              LOG NOW
-            </p>
-            <p className="mt-1.5 text-[13px] font-normal text-sidebar-text">
-              Capacity Planning
-            </p>
+            <div className="flex items-start gap-1.5">
+              <img
+                src="/lognow-logo.png?v=2"
+                alt="LogNow"
+                width={28}
+                height={28}
+                className="mt-0.5 h-7 w-7 shrink-0 object-contain"
+              />
+              <div className="text-left">
+                <p className="text-lg font-bold tracking-[0.18em] text-accent">
+                  LOGNOW
+                </p>
+                <p className="text-sm font-bold text-white">Capacity Planner</p>
+              </div>
+            </div>
           </div>
           <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-2">
             {items.map((item) => {
@@ -80,9 +89,20 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center justify-between bg-sidebar px-4 py-3 text-white lg:hidden">
-            <div>
-              <p className="text-base font-bold tracking-wide">LOG NOW</p>
-              <p className="text-[11px] text-sidebar-text">Capacity Planning</p>
+            <div className="flex items-start gap-1.5">
+              <img
+                src="/lognow-logo.png?v=2"
+                alt="LogNow"
+                width={28}
+                height={28}
+                className="mt-0.5 h-7 w-7 shrink-0 object-contain"
+              />
+              <div className="text-left">
+                <p className="text-lg font-bold tracking-[0.18em] text-accent">
+                  LOGNOW
+                </p>
+                <p className="text-sm font-bold text-white">Capacity Planner</p>
+              </div>
             </div>
             <button
               type="button"
